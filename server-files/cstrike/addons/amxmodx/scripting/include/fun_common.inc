@@ -16,6 +16,7 @@ stock const FUN_MODE_CLASSIC[] = "classic";
 stock const FUN_MODE_GUNGAME[] = "gungame";
 stock const FUN_MODE_ZOMBIE[] = "zombie";
 stock const FUN_MODE_DEATHMATCH[] = "deathmatch";
+stock const FUN_MODE_DEATHRUN[] = "deathrun";
 
 /**
  * Copies the active game mode into the buffer, falling back to classic.

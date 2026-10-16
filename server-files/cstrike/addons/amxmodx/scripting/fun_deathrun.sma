@@ -1,11 +1,11 @@
-// Fun Deathrun - round logic for deathrun_ maps in the classic mode.
+// Fun Deathrun - round logic for the deathrun mode.
 //
 // Each round one player becomes the Terrorist who triggers the traps,
 // everybody else runs the course as CT. Humans are preferred as trapper
 // (bots do not press trap buttons) and nobody is trapper twice in a row.
 // Everybody starts with a knife only, weapons the map hands out at the end of
-// the course can still be picked up. Bots are off on these maps unless
-// fun_deathrun_bots says otherwise.
+// the course can still be picked up. Team balance and bots are switched off
+// in modes/deathrun.cfg.
 
 #include <amxmodx>
 #include <cstrike>
@@ -24,22 +24,17 @@
 const Float:EQUIP_DELAY_SECONDS = 0.2;
 const NO_PLAYER = 0;
 
-new bool:gIsDeathrunMap;
+new bool:gIsDeathrunMode;
 new gTrapperId = NO_PLAYER;
 new gLastTrapperId = NO_PLAYER;
 new gHudSync;
-new gBotsCvar;
 
 public plugin_init()
 {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
-    gBotsCvar = create_cvar("fun_deathrun_bots", "0", _, "Number of bots on deathrun maps", true, 0.0, true, 31.0);
-
-    new mapName[MAX_MAPNAME_LENGTH];
-    get_mapname(mapName, charsmax(mapName));
-    gIsDeathrunMap = is_fun_mode(FUN_MODE_CLASSIC) && equali(mapName, "deathrun_", 9);
-    if (!gIsDeathrunMap) {
+    gIsDeathrunMode = is_fun_mode(FUN_MODE_DEATHRUN);
+    if (!gIsDeathrunMode) {
         return;
     }
 
@@ -47,22 +42,6 @@ public plugin_init()
     RegisterHam(Ham_Spawn, "player", "onPlayerSpawned", 1);
 
     gHudSync = CreateHudSyncObj();
-}
-
-public plugin_cfg()
-{
-    if (!gIsDeathrunMap) {
-        return;
-    }
-
-    // One Terrorist against everybody else is the whole point, team balance
-    // would undo it. base.cfg restores both on the next map.
-    set_cvar_num("mp_autoteambalance", 0);
-    set_cvar_num("mp_limitteams", 0);
-
-    // Bots know neither the traps nor the course, they only get in the way.
-    // fun_modes runs base.cfg before this, so yb_quota is back on the next map.
-    set_cvar_num("yb_quota", get_pcvar_num(gBotsCvar));
 }
 
 public client_disconnected(playerId)
@@ -178,7 +157,7 @@ public equipKnifeOnly(taskId)
 
 public CS_OnBuyAttempt(playerId, item)
 {
-    if (gIsDeathrunMap) {
+    if (gIsDeathrunMode) {
         return PLUGIN_HANDLED;
     }
     return PLUGIN_CONTINUE;

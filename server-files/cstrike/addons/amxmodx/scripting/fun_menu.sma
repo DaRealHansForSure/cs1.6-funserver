@@ -34,14 +34,16 @@ new const MODE_IDS[][] = {
     "classic",
     "gungame",
     "zombie",
-    "deathmatch"
+    "deathmatch",
+    "deathrun"
 };
 
 new const MODE_TITLES[][] = {
     "Classic Fun",
     "GunGame",
     "Zombie Infection",
-    "Deathmatch"
+    "Deathmatch",
+    "Deathrun"
 };
 
 new const GLOW_COLORS[][] = {

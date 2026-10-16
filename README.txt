@@ -3,7 +3,7 @@ CS 1.6 LAN FUN SERVER
 
 A ready-made package for a Counter-Strike 1.6 fun server on your LAN, just
 like the old days: Hook, Grab, Parachute, Quake announcements, GunGame,
-Zombie and Deathmatch, switchable by vote, plus bots and fun maps.
+Zombie, Deathmatch and Deathrun, switchable by vote, plus bots and fun maps.
 
 
 GETTING STARTED (3 STEPS)
@@ -52,17 +52,18 @@ Custom fun plugins (source code included, compiled during installation):
   - fun_zombie     zombie infection
   - fun_menu       the Fun menu (/fun): modes, maps and admin toys on number keys
   - fun_rounds     surprise fun rounds in Classic (knives, AWP, low gravity ...)
-  - fun_deathrun   round logic for deathrun maps (one trapper, everybody runs)
+  - fun_deathrun   the Deathrun mode (one trapper, everybody runs)
 
 Also enabled: miscstats (announcements like "Headshot", "Monster Kill",
 "Humiliation") and statsx (/rank, /top15).
 
 
-THE FOUR MODES
+THE FIVE MODES
 --------------
 
 Type  /mode  in chat, then everyone votes for 15 seconds.
-Admins switch immediately with:  amx_funmode classic|gungame|zombie|deathmatch
+Admins switch immediately with /fun -> Switch mode, or in the console:
+  amx_funmode classic|gungame|zombie|deathmatch|deathrun
 
   Classic Fun   Normal CS with Hook, Grab, Parachute and auto bunnyhop
                 (hold the space bar).
@@ -74,6 +75,8 @@ Admins switch immediately with:  amx_funmode classic|gungame|zombie|deathmatch
                 the round time, they win.
   Deathmatch    Free-for-all, instant respawn, random weapon, buy anywhere,
                 Hook is on.
+  Deathrun      One player sets off the traps, everybody else runs the
+                course. Details below.
 
 Each mode has its own map list, so the map vote at the end of a map only
 offers suitable maps.
@@ -89,25 +92,33 @@ Admins pick the next round with  amx_funround <name|random|off>
 Change how often:  fun_rounds_every 3   (off: fun_rounds_enabled 0)
 Not on knife, HE, deathrun and surf maps, those have their own rules.
 
-DEATHRUN (on deathrun_ maps in Classic)
-  Not a separate mode: it switches on by itself as soon as a deathrun_
-  map runs in Classic.
-  How to start:
-    1. Make sure Classic runs (/fun -> Switch mode, or amx_funmode classic)
-    2. /fun -> Change map -> pick a deathrun_ map
-       (or in the console:  amx_map deathrun_<name>)
-    Deathrun maps also come up in the normal Classic map vote.
+DEATHRUN
+  How to start: pick 5) Deathrun in 2_START_SERVER.bat, vote for it with
+  /mode, or as admin /fun -> Switch mode -> Deathrun.
+  Maps: deathrun_temple, deathrun_dojo, deathrun_projetocs,
+  deathrun_forest, deathrun_crash_egypt (plus your own deathrun_ maps).
   How it plays:
     - Each round one player is the Terrorist. They stand at the trap
       buttons and press them (E) when the runners pass.
     - Everybody else runs the course as CT, knife only, no buying. Weapons
       the map hands out at the end of the course can be picked up.
     - The trapper is picked at random, humans first, never twice in a row.
-  Bots: off on deathrun maps (they do not know the traps) and back on the
-  next normal map. To allow some bots:  fun_deathrun_bots 2
+    - Hook and parachute are off (they would skip the traps), auto
+      bunnyhop is on.
+  Bots: off in Deathrun, they do not know the traps. Back on in the other
+  modes. To allow some bots, change yb_quota in
+  server-files\cstrike\modes\deathrun.cfg.
 
-Surf maps (surf_..., Classic and Deathmatch): hold strafe (A or D) on the
-slanted ramps and steer with the mouse, do not press W.
+SURF
+  Maps: surf_ski_2, surf_water-run, surf_ninja. They run in Classic and
+  Deathmatch (with instant respawn and random weapons).
+  How to surf: hold strafe (A or D) towards the slanted ramp and steer
+  with the mouse, do not press W.
+  On surf maps the server switches to surf physics (sv_airaccelerate 100),
+  turns fall damage and bots off. This comes from
+  server-files\cstrike\modes\maps\surf.cfg and is undone on the next map.
+  The same works for any map type: modes\maps\<prefix>.cfg runs on every
+  map whose name starts with <prefix>_ (e.g. kz.cfg for kz_ maps).
 
 
 BINDING KEYS (in the CS console, key ^)
@@ -169,9 +180,10 @@ All standard CS 1.6 maps are included as well.
 
 Your own maps: put .bsp files or whole .zip/.rar/.7z archives into the
 "custom-maps" folder and run 3_UPDATE_MAPS.bat. Maps are assigned to the
-modes by their name (zm_ = Zombie, fy_/aim_/awp_ etc. = GunGame and
-Deathmatch, everything except zm_ = Classic). Knife and grenade maps
-(35hp_, ka_, he_) only run in Classic.
+modes by their name (zm_ = Zombie, deathrun_ = Deathrun, fy_/aim_/awp_
+etc. = GunGame and Deathmatch, surf_ = Classic and Deathmatch, everything
+else = Classic). Knife and grenade maps (35hp_, ka_, he_) only run in
+Classic.
 
 The map list for the download is in tools\maps.csv.
 

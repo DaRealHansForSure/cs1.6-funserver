@@ -24,6 +24,7 @@ $Modes = [ordered]@{
     '2' = @{ Id = 'gungame'; Title = 'GunGame' }
     '3' = @{ Id = 'zombie'; Title = 'Zombie Infection' }
     '4' = @{ Id = 'deathmatch'; Title = 'Deathmatch' }
+    '5' = @{ Id = 'deathrun'; Title = 'Deathrun (one trapper, everybody runs, no bots)' }
 }
 
 <#

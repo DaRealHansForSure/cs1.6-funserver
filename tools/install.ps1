@@ -768,8 +768,14 @@ function Get-MapModes {
         return $modes
     }
 
+    # Deathrun maps only make sense with the one-trapper rules of their mode.
+    if ($MapName -like 'deathrun_*') {
+        $modes += 'deathrun'
+        return $modes
+    }
+
     $modes += 'classic'
-    if ($isSpecialWeaponMap -or $MapName -like 'deathrun_*') {
+    if ($isSpecialWeaponMap) {
         return $modes
     }
 
@@ -803,6 +809,7 @@ function Update-MapCycles {
         gungame    = New-Object System.Collections.Generic.List[string]
         deathmatch = New-Object System.Collections.Generic.List[string]
         zombie     = New-Object System.Collections.Generic.List[string]
+        deathrun   = New-Object System.Collections.Generic.List[string]
     }
 
     # Fun maps first, so a fresh server starts on something fun instead of

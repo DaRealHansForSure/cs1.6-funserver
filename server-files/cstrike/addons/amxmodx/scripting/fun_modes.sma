@@ -19,7 +19,7 @@
 #define TASK_VOTE_END 4100
 #define TASK_MAP_CHANGE 4200
 
-const MODE_COUNT = 4;
+const MODE_COUNT = 5;
 const Float:VOTE_DURATION_SECONDS = 15.0;
 const Float:VOTE_COOLDOWN_SECONDS = 120.0;
 const Float:MAP_CHANGE_DELAY_SECONDS = 5.0;
@@ -29,14 +29,16 @@ new const MODE_IDS[MODE_COUNT][] = {
     "classic",
     "gungame",
     "zombie",
-    "deathmatch"
+    "deathmatch",
+    "deathrun"
 };
 
 new const MODE_TITLES[MODE_COUNT][] = {
     "Classic Fun (Hook, Grab, Parachute)",
     "GunGame",
     "Zombie Infection",
-    "Deathmatch"
+    "Deathmatch",
+    "Deathrun"
 };
 
 new gActiveMode[FUN_MODE_LENGTH];
@@ -53,7 +55,7 @@ public plugin_init()
 
     register_clcmd("say /mode", "cmdStartVote");
     register_clcmd("say_team /mode", "cmdStartVote");
-    register_concmd("amx_funmode", "cmdSetMode", ADMIN_MAP, "<classic|gungame|zombie|deathmatch> - switches the mode right away");
+    register_concmd("amx_funmode", "cmdSetMode", ADMIN_MAP, "<classic|gungame|zombie|deathmatch|deathrun> - switches the mode right away");
 
     get_fun_mode(gActiveMode, charsmax(gActiveMode));
 }
@@ -64,9 +66,37 @@ public plugin_cfg()
     // the mode file only has to list what makes that mode special.
     server_cmd("exec modes/base.cfg");
     server_cmd("exec modes/%s.cfg", gActiveMode);
+
+    // Some map types need physics of their own in every mode, surf for
+    // example needs a high sv_airaccelerate. They get modes/maps/<prefix>.cfg.
+    new mapTypeConfig[64];
+    if (findMapTypeConfig(mapTypeConfig, charsmax(mapTypeConfig))) {
+        server_cmd("exec %s", mapTypeConfig);
+        log_amx("Map type settings: %s", mapTypeConfig);
+    }
     server_exec();
 
     log_amx("Active mode: %s", gActiveMode);
+}
+
+/**
+ * Builds modes/maps/<prefix>.cfg from the part of the map name before the
+ * first underscore and returns true when that file exists.
+ */
+bool:findMapTypeConfig(configPath[], length)
+{
+    new mapName[MAX_MAPNAME_LENGTH];
+    get_mapname(mapName, charsmax(mapName));
+
+    new underscorePosition = contain(mapName, "_");
+    if (underscorePosition <= 0) {
+        return false;
+    }
+    mapName[underscorePosition] = EOS;
+    strtolower(mapName);
+
+    formatex(configPath, length, "modes/maps/%s.cfg", mapName);
+    return bool:file_exists(configPath);
 }
 
 public client_putinserver(playerId)
@@ -124,7 +154,7 @@ public cmdSetMode(playerId, level, commandId)
 
     new modeIndex = findModeIndex(requestedMode);
     if (!equal(MODE_IDS[modeIndex], requestedMode)) {
-        console_print(playerId, "Unknown mode. Possible: classic, gungame, zombie, deathmatch");
+        console_print(playerId, "Unknown mode. Possible: classic, gungame, zombie, deathmatch, deathrun");
         return PLUGIN_HANDLED;
     }
 

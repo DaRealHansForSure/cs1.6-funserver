@@ -72,7 +72,7 @@ public plugin_init()
     gAdminOnlyCvar = create_cvar("fun_hook_admin_only", "0", _, "Only admins may use the hook", true, 0.0, true, 1.0);
 
     // The hook only fits the relaxed modes, so it switches itself off in the others.
-    if (is_fun_mode(FUN_MODE_GUNGAME) || is_fun_mode(FUN_MODE_ZOMBIE)) {
+    if (is_fun_mode(FUN_MODE_GUNGAME) || is_fun_mode(FUN_MODE_ZOMBIE) || is_fun_mode(FUN_MODE_DEATHRUN)) {
         set_pcvar_num(gEnabledCvar, 0);
     }
 
