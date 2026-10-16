@@ -77,7 +77,7 @@ public sealed partial class MainViewModel : ObservableObject {
     private async Task StartOrStop() {
         if (!Connection.IsRunning) {
             SelectedTab = ServerTab;
-            ServerTab.StartServerCommand.Execute(null);
+            ServerTab.StartOrSwitchCommand.Execute(null);
             return;
         }
 

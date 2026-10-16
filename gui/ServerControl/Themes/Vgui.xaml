@@ -110,14 +110,15 @@
         <Setter Property="CaretBrush" Value="{StaticResource TextBrush}" />
         <Setter Property="SelectionBrush" Value="{StaticResource SelectionBrush}" />
         <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
-        <Setter Property="Padding" Value="4,3" />
+        <Setter Property="Padding" Value="4,2" />
+        <Setter Property="MinHeight" Value="23" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
                     <Border Background="{TemplateBinding Background}" BorderBrush="{StaticResource BevelDarkBrush}" BorderThickness="1,1,0,0">
                         <Border BorderBrush="{StaticResource BevelLightBrush}" BorderThickness="0,0,1,1">
-                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
                         </Border>
                     </Border>
                 </ControlTemplate>

@@ -30,6 +30,9 @@ public sealed partial class ServerConnection : ObservableObject {
     private bool _isAnswering;
 
     [ObservableProperty]
+    private bool _isTvRunning;
+
+    [ObservableProperty]
     private string _serverName = "LAN Fun Server";
 
     [ObservableProperty]
@@ -48,6 +51,7 @@ public sealed partial class ServerConnection : ObservableObject {
     private IPAddress _lanAddress;
 
     public string Address => $"{LanAddress}:{ServerProcess.GamePort}";
+    public string TvAddress => $"{LanAddress}:{ServerProcess.TvPort}";
     public string CurrentModeTitle => GameModes.Find(CurrentModeId).Title;
 
     public string StatusText {
@@ -91,12 +95,14 @@ public sealed partial class ServerConnection : ObservableObject {
 
     partial void OnLanAddressChanged(IPAddress value) {
         OnPropertyChanged(nameof(Address));
+        OnPropertyChanged(nameof(TvAddress));
         Rcon.Server = new IPEndPoint(value, ServerProcess.GamePort);
     }
 
     /// <summary>Polls process, query and mode log. Called by a timer.</summary>
     public async Task RefreshAsync(CancellationToken cancellation) {
         IsRunning = Process.IsRunning;
+        IsTvRunning = Process.IsTvRunning;
         if (!IsRunning) {
             IsAnswering = false;
             PlayerCount = 0;

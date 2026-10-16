@@ -15,11 +15,18 @@ namespace ServerControl.Services;
 public sealed class ServerProcess(PackagePaths paths) {
     public const int GamePort = 27015;
     public const int FastDownloadPort = 27080;
+    public const int TvPort = 27020;
+
+    // Below 10 seconds HLTV turns its automatic camera director off, and on
+    // a LAN there is nobody to cheat with a longer delay.
+    private const int TvDelaySeconds = 10;
 
     private Process? _hlds;
     private Process? _fastDownload;
+    private Process? _tv;
 
     public bool IsRunning => FindHlds() != null;
+    public bool IsTvRunning => _tv != null && !_tv.HasExited;
 
     public static IPAddress FindLanAddress() {
         // The adapter with a default gateway is the one connected to the router,
@@ -90,8 +97,43 @@ public sealed class ServerProcess(PackagePaths paths) {
     }
 
     /// <summary>
+    /// Starts an HLTV proxy for a big screen: it joins the game server as a
+    /// spectator slot, and TV PCs connect to it on port 27020.
+    /// </summary>
+    public void StartTv(IPAddress lanAddress) {
+        if (IsTvRunning) {
+            return;
+        }
+
+        string hltvExe = Path.Combine(paths.ServerDir, "hltv.exe");
+        if (!File.Exists(hltvExe)) {
+            throw new InvalidOperationException("hltv.exe is missing. Run 1_INSTALL.bat to repair the server.");
+        }
+
+        _tv = Process.Start(new ProcessStartInfo {
+            FileName = hltvExe,
+            Arguments = string.Join(' ',
+                $"-port {TvPort}",
+                $"+connect {lanAddress}:{GamePort}",
+                $"+delay {TvDelaySeconds}",
+                "+maxrate 10000",
+                "+name LAN-TV"),
+            WorkingDirectory = paths.ServerDir,
+            UseShellExecute = true,
+            WindowStyle = ProcessWindowStyle.Minimized,
+        });
+    }
+
+    public void StopTv() {
+        if (_tv != null) {
+            TryKill(_tv);
+            _tv = null;
+        }
+    }
+
+    /// <summary>
     /// Waits for the server to end after RCON "quit" and kills it when it does
-    /// not, then also ends the fast download server this window started.
+    /// not, then also ends the fast download server and TV this window started.
     /// </summary>
     public async Task StopAsync(TimeSpan gracePeriod) {
         Process? hlds = FindHlds();
@@ -104,6 +146,7 @@ public sealed class ServerProcess(PackagePaths paths) {
             }
         }
         StopFastDownload();
+        StopTv();
     }
 
     private Process? FindHlds() {

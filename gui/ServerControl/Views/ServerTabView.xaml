@@ -28,6 +28,8 @@
                                     </Button.Template>
                                     <DockPanel>
                                         <TextBlock DockPanel.Dock="Left" Text="{Binding Mode.Title}" FontWeight="Bold" Width="130" />
+                                        <TextBlock DockPanel.Dock="Right" Text="running" FontWeight="Bold" Foreground="{StaticResource RunningBrush}"
+                                                   Visibility="{Binding IsRunning, Converter={StaticResource BoolToVisibility}}" />
                                         <TextBlock Text="{Binding Mode.Description}">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
@@ -48,9 +50,22 @@
                 </Border>
             </Border>
 
-            <TextBlock Text="Start map" Style="{StaticResource SectionTitle}" />
+            <TextBlock Style="{StaticResource SectionTitle}">
+                <TextBlock.Text>Map for start or switch</TextBlock.Text>
+            </TextBlock>
             <DockPanel Margin="0,0,0,12">
-                <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Start server" Command="{Binding StartServerCommand}" Margin="6,0,0,0" Padding="16,4" />
+                <Button DockPanel.Dock="Right" Command="{Binding StartOrSwitchCommand}" Margin="6,0,0,0" Padding="16,4" MinWidth="110">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource AccentButton}">
+                            <Setter Property="Content" Value="Start server" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Connection.IsRunning}" Value="True">
+                                    <Setter Property="Content" Value="Switch now" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
                 <Button DockPanel.Dock="Right" Content="Choose map..." Command="{Binding ChooseMapCommand}" Margin="6,0,0,0" />
                 <Border Style="{StaticResource SunkenPanel}">
                     <Border Style="{StaticResource SunkenPanelShade}" Padding="6,4">
@@ -81,6 +96,25 @@
                     <Run Text="connect " /><Run Text="{Binding Connection.Address, Mode=OneWay}" />
                 </TextBlock>
             </Grid>
+
+            <TextBlock Text="TV for a big screen (HLTV)" Style="{StaticResource SectionTitle}" />
+            <DockPanel Margin="0,0,0,12">
+                <Button DockPanel.Dock="Left" Command="{Binding ToggleTvCommand}" MinWidth="90" Margin="0,0,10,0">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                            <Setter Property="Content" Value="Start TV" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Connection.IsTvRunning}" Value="True">
+                                    <Setter Property="Content" Value="Stop TV" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <TextBlock VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}">
+                    <Run Text="On the TV PC:" /> <Run Text="connect " FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextBrush}" /><Run Text="{Binding Connection.TvAddress, Mode=OneWay}" FontFamily="{StaticResource MonoFont}" Foreground="{StaticResource TextBrush}" /><Run Text="  (10 s delay, uses one player slot)" />
+                </TextBlock>
+            </DockPanel>
 
             <TextBlock Text="Package" Style="{StaticResource SectionTitle}" />
             <WrapPanel>

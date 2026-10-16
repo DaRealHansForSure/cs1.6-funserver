@@ -161,6 +161,18 @@ public class LocalSettingsTests : IDisposable {
     }
 
     [Fact]
+    public void ReadsUnquotedValuesOfTheModeConfigs() {
+        File.WriteAllText(_path, "// GunGame\r\nmapcyclefile \"mapcycle_gungame.txt\"\r\nyb_quota 6\r\nmp_forcerespawn 1.5 // seconds\r\n");
+
+        var settings = new LocalSettings(_path);
+
+        Assert.Equal("6", settings.Get("yb_quota"));
+        Assert.Equal("1.5", settings.Get("mp_forcerespawn"));
+        Assert.Equal("mapcycle_gungame.txt", settings.Get("mapcyclefile"));
+        Assert.Null(settings.Get("hostname"));
+    }
+
+    [Fact]
     public void DropsQuotesThatWouldBreakTheConfig() {
         var settings = new LocalSettings(_path);
         settings.Set("hostname", "Bad \"name\"");

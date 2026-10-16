@@ -10,9 +10,9 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="30" />
-                    <RowDefinition Height="30" />
-                    <RowDefinition Height="30" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Text="Server name" VerticalAlignment="Center" />
                 <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding ServerName, UpdateSourceTrigger=PropertyChanged}" Margin="0,3" />
@@ -29,8 +29,8 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="30" />
-                    <RowDefinition Height="30" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Text="Fun round every n rounds" VerticalAlignment="Center" />
                 <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding FunRoundsEvery, UpdateSourceTrigger=PropertyChanged}" Margin="0,3" Width="60" HorizontalAlignment="Left" />
@@ -39,6 +39,24 @@
             </Grid>
             <CheckBox Content="Fun rounds on" IsChecked="{Binding FunRoundsEnabled}" />
             <CheckBox Content="Only admins may use the hook" IsChecked="{Binding HookAdminOnly}" />
+
+            <TextBlock Text="Bots per mode (they leave when humans join)" Style="{StaticResource SectionTitle}" Margin="0,16,0,6" />
+            <ItemsControl ItemsSource="{Binding BotsPerMode}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Mode.Title}" VerticalAlignment="Center" />
+                            <TextBox Grid.Column="1" Text="{Binding BotCount, UpdateSourceTrigger=PropertyChanged}" Margin="0,3" Width="60" HorizontalAlignment="Left" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,0"
+                       Text="Surf maps always run without bots, they can not surf." />
 
             <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
                 <Button Content="Save and apply" Style="{StaticResource AccentButton}" Command="{Binding SaveCommand}" />
@@ -57,7 +75,7 @@
             </StackPanel>
 
             <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,16,0,0"
-                       Text="Saved to server\cstrike\local.cfg, which runs on every map start after the mode settings. Round times and bots per mode stay in server-files\cstrike\modes\*.cfg." />
+                       Text="Saved to server\cstrike\local.cfg (bots in local_&lt;mode&gt;.cfg), which run on every map start after the mode settings. Round times stay in server-files\cstrike\modes\*.cfg." />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

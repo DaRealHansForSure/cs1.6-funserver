@@ -37,7 +37,9 @@ SERVER CONTROL WINDOW
 ---------------------
 
 4_SERVER_CONTROL.exe controls the whole server with the mouse:
-  Server     pick the mode and first map, start and stop, LAN address
+  Server     pick the mode and map, then Start server; while it runs the
+             same button says Switch now and changes mode and map at
+             once. Start TV for a big screen (see below), LAN address
   Maps       every installed map with a picture, filter by mode,
              Play = change map now, First map = start the server on it
   Players    who is on, bots +1 / -1 / off, glow, rocket, godmode,
@@ -45,12 +47,20 @@ SERVER CONTROL WINDOW
   Fun        force the next fun round, switch mode, restart round,
              hook on/off, chat message to everybody
   Settings   server name, join password, max players, fun rounds,
-             hook speed (saved in server\cstrike\local.cfg)
+             hook speed, bots per mode (saved in server\cstrike\local.cfg
+             and local_<mode>.cfg)
   Console    any server command at the bottom, with the answer
 
 It talks to the server over RCON with a random password that lives only
 in server\cstrike\local.cfg. A server started with 2_START_SERVER.bat
 works with the window too.
+
+TV for a big screen: Start TV on the Server tab starts an HLTV proxy. On
+the PC at the TV or projector start CS and type in the console
+  connect <server IP>:27020
+That PC watches as a spectator with the automatic camera, 10 seconds
+behind the game. The TV uses one player slot. Allow UDP 27020 in the
+firewall if Windows asks (1_INSTALL.bat as admin adds the rule).
 
 Map pictures: the installer downloads one screenshot per fun map from
 GameBanana into tools\previews\ (the ModId column of tools\maps.csv),

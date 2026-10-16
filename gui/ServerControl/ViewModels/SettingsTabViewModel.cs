@@ -6,12 +6,23 @@ using ServerControl.Services;
 
 namespace ServerControl.ViewModels;
 
+public sealed partial class ModeBotSetting(GameMode mode) : ObservableObject {
+    public GameMode Mode { get; } = mode;
+
+    [ObservableProperty]
+    private string _botCount = "0";
+}
+
 /// <summary>
-/// The few settings that hold for every mode. Mode rules (round time, bots
-/// per mode ...) stay in the mode configs on purpose: a value in local.cfg
-/// would override them in every mode.
+/// Settings that hold for every mode go to local.cfg. Bots are the one mode
+/// rule the window changes, per mode in local_&lt;mode&gt;.cfg, because a
+/// yb_quota in local.cfg would override every mode at once.
 /// </summary>
 public sealed partial class SettingsTabViewModel : TabViewModel {
+    private const int MaxBots = 31;
+
+    public IReadOnlyList<ModeBotSetting> BotsPerMode { get; }
+
     [ObservableProperty]
     private string _serverName = "LAN Fun Server";
 
@@ -40,7 +51,22 @@ public sealed partial class SettingsTabViewModel : TabViewModel {
     private bool _hasError;
 
     public SettingsTabViewModel(ServerConnection connection) : base("Settings", connection) {
+        BotsPerMode = GameModes.All.Select(mode => new ModeBotSetting(mode)).ToList();
         Load();
+    }
+
+    /// <summary>
+    /// The bot count a mode really runs with: the window's own value, else the
+    /// mode config, else base.cfg (which every mode starts from).
+    /// </summary>
+    private string ReadBotCount(string modeId) {
+        foreach (string configFile in new[] { Connection.Paths.ModeLocalConfig(modeId), Connection.Paths.ModeConfig(modeId), Connection.Paths.BaseModeConfig }) {
+            string? value = new LocalSettings(configFile).Get("yb_quota");
+            if (value != null) {
+                return value;
+            }
+        }
+        return "0";
     }
 
     private void Load() {
@@ -52,6 +78,10 @@ public sealed partial class SettingsTabViewModel : TabViewModel {
         HookSpeed = settings.Get("fun_hook_speed") ?? HookSpeed;
         HookAdminOnly = settings.Get("fun_hook_admin_only") == "1";
         MaxPlayers = Connection.Settings.MaxPlayers.ToString(CultureInfo.InvariantCulture);
+
+        foreach (ModeBotSetting setting in BotsPerMode) {
+            setting.BotCount = ReadBotCount(setting.Mode.Id);
+        }
     }
 
     [RelayCommand]
@@ -64,6 +94,14 @@ public sealed partial class SettingsTabViewModel : TabViewModel {
         if (ServerName.Trim().Length == 0) {
             ShowError("Enter a server name.");
             return;
+        }
+
+        var botCounts = new Dictionary<string, int>();
+        foreach (ModeBotSetting setting in BotsPerMode) {
+            if (!TryReadNumber(setting.BotCount, 0, MaxBots, $"Bots in {setting.Mode.Title}", out int botCount)) {
+                return;
+            }
+            botCounts[setting.Mode.Id] = botCount;
         }
 
         var values = new Dictionary<string, string> {
@@ -83,6 +121,12 @@ public sealed partial class SettingsTabViewModel : TabViewModel {
             settings.EnsureRconPassword();
             settings.Save();
 
+            foreach ((string modeId, int botCount) in botCounts) {
+                var modeSettings = new LocalSettings(Connection.Paths.ModeLocalConfig(modeId));
+                modeSettings.Set("yb_quota", botCount.ToString(CultureInfo.InvariantCulture));
+                modeSettings.Save();
+            }
+
             bool maxPlayersChanged = Connection.Settings.MaxPlayers != maxPlayers;
             Connection.Settings.MaxPlayers = maxPlayers;
             Connection.Settings.Save(Connection.Paths.WindowSettingsFile);
@@ -90,6 +134,13 @@ public sealed partial class SettingsTabViewModel : TabViewModel {
             if (Connection.IsRunning) {
                 foreach ((string cvar, string value) in values) {
                     await Connection.RunAsync($"{cvar} \"{value}\"");
+                }
+
+                // Surf and similar maps switch bots off with their own config,
+                // which must keep winning until the next map.
+                bool mapHasOwnRules = HasMapTypeConfig(Connection.CurrentMap);
+                if (!mapHasOwnRules && botCounts.TryGetValue(Connection.CurrentModeId, out int currentBots)) {
+                    await Connection.RunAsync($"yb_quota {currentBots}");
                 }
             }
 
@@ -100,6 +151,16 @@ public sealed partial class SettingsTabViewModel : TabViewModel {
         } catch (IOException exception) {
             ShowError($"Could not save local.cfg: {exception.Message}");
         }
+    }
+
+    /// <summary>Same rule as findMapTypeConfig in fun_modes.sma.</summary>
+    private bool HasMapTypeConfig(string mapName) {
+        int underscore = mapName.IndexOf('_');
+        if (underscore <= 0) {
+            return false;
+        }
+        string prefix = mapName[..underscore].ToLowerInvariant();
+        return File.Exists(Path.Combine(Connection.Paths.MapTypeConfigDir, prefix + ".cfg"));
     }
 
     private bool TryReadNumber(string text, int min, int max, string label, out int value) {

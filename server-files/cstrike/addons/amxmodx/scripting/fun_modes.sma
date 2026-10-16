@@ -80,6 +80,15 @@ public plugin_cfg()
     server_cmd("exec modes/base.cfg");
     server_cmd("exec modes/%s.cfg", gActiveMode);
 
+    // local_<mode>.cfg holds what the host changed for this mode only in the
+    // Server Control window (bots per mode). It runs before the map type
+    // config on purpose, so surf and deathrun maps still keep their bots off.
+    new modeLocalConfig[64];
+    formatex(modeLocalConfig, charsmax(modeLocalConfig), "local_%s.cfg", gActiveMode);
+    if (file_exists(modeLocalConfig)) {
+        server_cmd("exec %s", modeLocalConfig);
+    }
+
     // Some map types need physics of their own in every mode, surf for
     // example needs a high sv_airaccelerate. They get modes/maps/<prefix>.cfg.
     new mapTypeConfig[64];

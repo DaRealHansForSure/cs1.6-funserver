@@ -15,6 +15,13 @@ public sealed class PackagePaths {
     public string MapsDir => Path.Combine(CstrikeDir, "maps");
     public string OverviewsDir => Path.Combine(CstrikeDir, "overviews");
     public string LocalConfig => Path.Combine(CstrikeDir, "local.cfg");
+    public string BaseModeConfig => Path.Combine(CstrikeDir, "modes", "base.cfg");
+    public string MapTypeConfigDir => Path.Combine(CstrikeDir, "modes", "maps");
+
+    public string ModeConfig(string modeId) => Path.Combine(CstrikeDir, "modes", modeId + ".cfg");
+
+    /// <summary>Per-mode settings from the window, run by fun_modes right after the mode config.</summary>
+    public string ModeLocalConfig(string modeId) => Path.Combine(CstrikeDir, $"local_{modeId}.cfg");
     public string AmxLogsDir => Path.Combine(CstrikeDir, "addons", "amxmodx", "logs");
     public string GameLogsDir => Path.Combine(CstrikeDir, "logs");
     public string FastDownloadScript => Path.Combine(Root, "tools", "fastdl-server.ps1");

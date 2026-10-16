@@ -78,6 +78,7 @@ public sealed partial class LocalSettings {
         File.WriteAllText(_path, content.ToString(), Encoding.ASCII);
     }
 
-    [GeneratedRegex(@"^\s*(?<cvar>[A-Za-z0-9_]+)\s+""(?<value>[^""]*)""")]
+    // The window writes quoted values, the mode configs mostly plain ones.
+    [GeneratedRegex(@"^\s*(?<cvar>[A-Za-z0-9_]+)\s+(?:""(?<value>[^""]*)""|(?<value>[^\s""/]+))")]
     private static partial Regex CvarLine();
 }

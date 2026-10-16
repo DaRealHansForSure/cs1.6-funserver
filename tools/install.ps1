@@ -927,7 +927,8 @@ function Add-FirewallRules {
     $rules = @(
         @{ Name = 'CS16 LAN Server (UDP)'; Protocol = 'UDP'; Port = '27015' },
         @{ Name = 'CS16 LAN Server (TCP)'; Protocol = 'TCP'; Port = '27015' },
-        @{ Name = 'CS16 LAN Fast-Download'; Protocol = 'TCP'; Port = '27080' }
+        @{ Name = 'CS16 LAN Fast-Download'; Protocol = 'TCP'; Port = '27080' },
+        @{ Name = 'CS16 LAN TV (HLTV)'; Protocol = 'UDP'; Port = '27020' }
     )
     foreach ($rule in $rules) {
         netsh advfirewall firewall delete rule name="$($rule.Name)" | Out-Null
