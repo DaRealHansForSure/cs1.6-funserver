@@ -70,8 +70,8 @@ Picks a random installed map from the mode's map list.
 
 .DESCRIPTION
 The lists are sorted by name, so always taking the first entry started every
-mode on the same map. Knife and grenade only maps are a fun round, not a good
-first impression, so they are skipped unless nothing else is installed.
+mode on the same map. Knife, grenade, deathrun and surf maps are a fun break,
+not a good first map, so they are skipped unless nothing else is installed.
 #>
 function Get-StartMapOfMode {
     param([string]$ModeId)
@@ -88,7 +88,7 @@ function Get-StartMapOfMode {
         return $FallbackMap
     }
 
-    $regularMaps = @($installedMaps | Where-Object { $_ -notmatch '^(35_?hp|he_|ka_)' })
+    $regularMaps = @($installedMaps | Where-Object { $_ -notmatch '^(35_?hp|he_|ka_|deathrun_|surf_)' })
     if ($regularMaps.Count -gt 0) {
         return Get-Random -InputObject $regularMaps
     }

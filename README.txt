@@ -51,6 +51,8 @@ Custom fun plugins (source code included, compiled during installation):
   - fun_gungame    GunGame with 24 weapon levels
   - fun_zombie     zombie infection
   - fun_menu       the Fun menu (/fun): modes, maps and admin toys on number keys
+  - fun_rounds     surprise fun rounds in Classic (knives, AWP, low gravity ...)
+  - fun_deathrun   round logic for deathrun maps (one trapper, everybody runs)
 
 Also enabled: miscstats (announcements like "Headshot", "Monster Kill",
 "Humiliation") and statsx (/rank, /top15).
@@ -75,6 +77,37 @@ Admins switch immediately with:  amx_funmode classic|gungame|zombie|deathmatch
 
 Each mode has its own map list, so the map vote at the end of a map only
 offers suitable maps.
+
+Fun rounds (Classic only): every third round brings a surprise rule for
+that round, announced at the round start:
+  knives    knives only              headshot  only headshots do damage
+  awp       AWP only                 deagle    one bullet, one shot kills,
+  lowgrav   low gravity                        every kill gives a bullet
+  speed     everybody runs fast      hewar     endless HE grenades
+                                     ghost     everybody almost invisible
+Admins pick the next round with  amx_funround <name|random|off>
+Change how often:  fun_rounds_every 3   (off: fun_rounds_enabled 0)
+Not on knife, HE, deathrun and surf maps, those have their own rules.
+
+DEATHRUN (on deathrun_ maps in Classic)
+  Not a separate mode: it switches on by itself as soon as a deathrun_
+  map runs in Classic.
+  How to start:
+    1. Make sure Classic runs (/fun -> Switch mode, or amx_funmode classic)
+    2. /fun -> Change map -> pick a deathrun_ map
+       (or in the console:  amx_map deathrun_<name>)
+    Deathrun maps also come up in the normal Classic map vote.
+  How it plays:
+    - Each round one player is the Terrorist. They stand at the trap
+      buttons and press them (E) when the runners pass.
+    - Everybody else runs the course as CT, knife only, no buying. Weapons
+      the map hands out at the end of the course can be picked up.
+    - The trapper is picked at random, humans first, never twice in a row.
+  Bots: off on deathrun maps (they do not know the traps) and back on the
+  next normal map. To allow some bots:  fun_deathrun_bots 2
+
+Surf maps (surf_..., Classic and Deathmatch): hold strafe (A or D) on the
+slanted ramps and steer with the mouse, do not press W.
 
 
 BINDING KEYS (in the CS console, key ^)
@@ -151,17 +184,26 @@ Listing and changing maps:
 The map lists per mode are server\cstrike\mapcycle_<mode>.txt.
 
 
-QUAKE SOUNDS (optional)
------------------------
+QUAKE SOUNDS
+------------
 
-The announcements always appear as text. For the real sounds, get a Quake
-sounds pack (e.g. from GameBanana) and put the .wav files into
-  server\cstrike\sound\misc\
-using these names:
+"Headshot!", "Double Kill", "Monster Kill", "Humiliation" (knife kill) and
+the other announcements play out loud. The installer downloads two sound
+packs from GameBanana and puts the files into server\cstrike\sound\misc\
+(plus djeyl\grenade.wav). Other players download them automatically when
+they connect. Needs 7-Zip (7-zip.org) to unpack the .rar packs.
+
+Your own sounds win: a file that already exists there is never replaced.
+To use another sound, overwrite it with a .wav of the same name (22050 Hz,
+mono works best):
   headshot, multikill, ultrakill, killingspree, rampage, unstoppable,
   monsterkill, godlike, humiliation, doublekill, firstblood, prepare,
-  oneandonly, maytheforce  (each as .wav)
-Other players download the sounds automatically when they connect.
+  oneandonly, maytheforce
+
+Credits:
+  "Blackshot Killstreak Quakesound!" by Apicvector (gamebanana.com)
+  "Kill sounds pack (UT recreation)" by Mike Isakov (gamebanana.com),
+  license CC BY-NC-ND 4.0
 
 
 CHANGING SETTINGS
@@ -178,8 +220,40 @@ Note: this copies the files from server-files again. So it is best to make
 your own changes directly in server-files\cstrike.
 
 
+FAST DOWNLOAD (FASTDL)
+----------------------
+
+What it is: a tiny web server on this PC (port 27080) that hands out maps,
+sounds, models and sprites to the other players. Without it, CS sends
+missing files through the game connection, which is extremely slow (a
+10 MB map can take minutes). With it, a player who does not have a map
+downloads it in seconds when joining or on a map change.
+
+When it runs: automatically. 2_START_SERVER.bat starts it in a minimized
+window titled "CS 1.6 Fast Download" and stops it again when the server
+stops. You never have to start it by hand. Leave that window open, closing
+it does not stop the game, but new players fall back to the slow download.
+
+What it shares: only files from server\cstrike\maps, sound, models,
+sprites, gfx, overviews and the map textures (.wad). Configs, plugins and
+the admin password are never served.
+
+Good to know:
+  - Windows asks once to allow it in the firewall, click "Allow access"
+    (TCP port 27080, 1_INSTALL.bat adds the rule when run as admin).
+  - The minimized window logs every downloaded file, handy to see that it
+    works.
+  - Run it by hand only for testing:
+      powershell -ExecutionPolicy Bypass -File tools\fastdl-server.ps1 -Root server\cstrike
+    then open http://<this PC's IP>:27080/maps/de_rats.bsp in a browser.
+
+
 TROUBLESHOOTING
 ---------------
+
+  Players download maps very slowly:
+    The fast download window is closed or blocked by the firewall. Restart
+    the server with 2_START_SERVER.bat and allow TCP 27080.
 
   Server not visible on the LAN:
     Check the firewall (allow incoming UDP 27015 and TCP 27080)
