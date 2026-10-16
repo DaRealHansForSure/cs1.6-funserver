@@ -64,7 +64,16 @@ function Read-StartMode {
     return $Modes['1'].Id
 }
 
-function Get-FirstMapOfMode {
+<#
+.SYNOPSIS
+Picks a random installed map from the mode's map list.
+
+.DESCRIPTION
+The lists are sorted by name, so always taking the first entry started every
+mode on the same map. Knife and grenade only maps are a fun round, not a good
+first impression, so they are skipped unless nothing else is installed.
+#>
+function Get-StartMapOfMode {
     param([string]$ModeId)
 
     $cycleFile = Join-Path $CstrikeDir "mapcycle_$ModeId.txt"
@@ -72,13 +81,18 @@ function Get-FirstMapOfMode {
         return $FallbackMap
     }
 
-    foreach ($line in Get-Content $cycleFile) {
-        $mapName = $line.Trim()
-        if ($mapName -and (Test-Path (Join-Path $CstrikeDir "maps\$mapName.bsp"))) {
-            return $mapName
-        }
+    $installedMaps = @(Get-Content $cycleFile |
+        ForEach-Object { $_.Trim() } |
+        Where-Object { $_ -and (Test-Path (Join-Path $CstrikeDir "maps\$_.bsp")) })
+    if ($installedMaps.Count -eq 0) {
+        return $FallbackMap
     }
-    return $FallbackMap
+
+    $regularMaps = @($installedMaps | Where-Object { $_ -notmatch '^(35_?hp|he_|ka_)' })
+    if ($regularMaps.Count -gt 0) {
+        return Get-Random -InputObject $regularMaps
+    }
+    return Get-Random -InputObject $installedMaps
 }
 
 if (-not (Test-Path $HldsExe)) {
@@ -87,7 +101,7 @@ if (-not (Test-Path $HldsExe)) {
 }
 
 $startMode = Read-StartMode
-$startMap = Get-FirstMapOfMode -ModeId $startMode
+$startMap = Get-StartMapOfMode -ModeId $startMode
 $lanAddress = Get-LanAddress
 $fastDownloadUrl = "http://${lanAddress}:$FastDownloadPort/"
 

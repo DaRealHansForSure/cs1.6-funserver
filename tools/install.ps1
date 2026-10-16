@@ -455,16 +455,25 @@ function Set-AmxPluginList {
     $content = $content -replace '^;miscstats\.amxx', 'miscstats.amxx'
     Set-Content -Path $pluginsIni -Value $content -Encoding Ascii
 
-    Add-BlockOnce -FilePath $pluginsIni -Lines @(
-        $FunPluginsMarker,
+    $funPlugins = @(
         'fun_modes.amxx',
         'fun_hook.amxx',
         'fun_grab.amxx',
         'fun_parachute.amxx',
         'fun_admincmds.amxx',
         'fun_gungame.amxx',
-        'fun_zombie.amxx'
+        'fun_zombie.amxx',
+        'fun_menu.amxx'
     )
+    Add-BlockOnce -FilePath $pluginsIni -Lines (@($FunPluginsMarker) + $funPlugins)
+
+    # Plugins added in a later version of the package must reach existing
+    # installs too, where the block above is already present.
+    $registeredLines = @(Get-Content $pluginsIni | ForEach-Object { $_.Trim() })
+    $missingPlugins = @($funPlugins | Where-Object { $_ -notin $registeredLines })
+    if ($missingPlugins.Count -gt 0) {
+        Add-Content -Path $pluginsIni -Value $missingPlugins -Encoding Ascii
+    }
 }
 
 function Set-AdminAccount {
@@ -661,7 +670,10 @@ function Get-MapModes {
     param([string]$MapName)
 
     $isZombieMap = $MapName -like 'zm_*'
-    $isSmallFunMap = $MapName -match '^(fy_|aim_|awp_|gg_|35_?hp|he_|ka_|fun_)' -or $MapName -like '*rats*' -or $MapName -like 'de_dust2_2x2*'
+    # Knife and grenade maps force their own weapons, which fights GunGame
+    # levels and Deathmatch spawn weapons, so they only run in classic.
+    $isSpecialWeaponMap = $MapName -match '^(35_?hp|he_|ka_)'
+    $isSmallFunMap = $MapName -match '^(fy_|aim_|awp_|gg_|fun_)' -or $MapName -like '*rats*' -or $MapName -like 'de_dust2_2x2*'
     $isGoodDeathmatchMap = $MapName -in @('de_dust2', 'de_inferno', 'de_nuke', 'de_aztec', 'de_train', 'cs_assault', 'cs_italy', 'cs_office', 'cs_mansion')
     $isGoodZombieMap = $MapName -in @('de_dust2', 'de_inferno', 'de_nuke', 'de_aztec', 'de_train', 'de_survivor', 'de_vertigo')
 
@@ -672,6 +684,9 @@ function Get-MapModes {
     }
 
     $modes += 'classic'
+    if ($isSpecialWeaponMap) {
+        return $modes
+    }
     if ($isSmallFunMap -or $MapName -in @('de_dust2', 'cs_assault', 'cs_mansion')) {
         $modes += 'gungame'
     }

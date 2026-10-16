@@ -50,6 +50,7 @@ Custom fun plugins (source code included, compiled during installation):
   - fun_admincmds  amx_rocket, amx_glow, amx_godmode, amx_noclip, amx_speed
   - fun_gungame    GunGame with 24 weapon levels
   - fun_zombie     zombie infection
+  - fun_menu       the Fun menu (/fun): modes, maps and admin toys on number keys
 
 Also enabled: miscstats (announcements like "Headshot", "Monster Kill",
 "Humiliation") and statsx (/rank, /top15).
@@ -83,6 +84,7 @@ BINDING KEYS (in the CS console, key ^)
   bind g "+grab"          Grab (admins only), left click throws
   bind mwheelup grab_closer
   bind mwheeldown grab_farther
+  bind F3 "fun_menu"      Fun menu (or type /fun in chat)
   Parachute:              hold E while falling
 
 
@@ -94,7 +96,17 @@ installation):
 
   setinfo _pw "yourpassword"
 
-Then reconnect. Admin menu:  amxmodmenu
+Then reconnect.
+
+Fun menu: type  /fun  in chat (or bind a key, see above).
+  1. Start mode vote   (everybody)
+  2. Switch mode
+  3. Change map        lists the maps of the current mode
+  4. Player fun        glow, godmode, noclip, rocket, speed
+  5. AMX Mod X admin menu (kick, ban, slay, map vote ...)
+Non-admins only see the mode vote enabled.
+
+Admin menu without the Fun menu:  amxmodmenu
 More admins go in  server\cstrike\addons\amxmodx\configs\users.ini
 
 Fun commands (target = name, @T, @CT or @ALL):
@@ -125,9 +137,18 @@ All standard CS 1.6 maps are included as well.
 Your own maps: put .bsp files or whole .zip/.rar/.7z archives into the
 "custom-maps" folder and run 3_UPDATE_MAPS.bat. Maps are assigned to the
 modes by their name (zm_ = Zombie, fy_/aim_/awp_ etc. = GunGame and
-Deathmatch, everything except zm_ = Classic).
+Deathmatch, everything except zm_ = Classic). Knife and grenade maps
+(35hp_, ka_, he_) only run in Classic.
 
 The map list for the download is in tools\maps.csv.
+
+Listing and changing maps:
+  say nextmap / say timeleft   in chat, for everybody
+  /fun -> Change map           admins, pick from the current mode
+  amx_map de_rats              admins, in the console
+  amx_votemapmenu              admins, let everybody vote on maps
+  maps *                       in the server window, lists all installed maps
+The map lists per mode are server\cstrike\mapcycle_<mode>.txt.
 
 
 QUAKE SOUNDS (optional)
