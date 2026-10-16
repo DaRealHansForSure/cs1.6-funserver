@@ -154,7 +154,8 @@ DEATHRUN
   How to start: pick 5) Deathrun in 2_START_SERVER.bat, vote for it with
   /mode, or as admin /fun -> Switch mode -> Deathrun.
   Maps: deathrun_temple, deathrun_dojo, deathrun_projetocs,
-  deathrun_forest, deathrun_crash_egypt (plus your own deathrun_ maps).
+  deathrun_forest, deathrun_crash_egypt, deathrun_cxx-inc, deathrun_death
+  (plus your own deathrun_ maps).
   How it plays:
     - Each round one player is the Terrorist. They stand at the trap
       buttons and press them (E) when the runners pass.
@@ -168,7 +169,7 @@ DEATHRUN
   server-files\cstrike\modes\deathrun.cfg.
 
 SURF
-  Maps: surf_ski_2, surf_water-run, surf_ninja. They run in Classic and
+  Maps: surf_ski_2, surf_water-run, surf_ninja, surf_green_delux2 (easy). They run in Classic and
   Deathmatch (with instant respawn and random weapons).
   How to surf: hold strafe (A or D) towards the slanted ramp and steer
   with the mouse, do not press W.
