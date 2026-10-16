@@ -96,11 +96,39 @@ function Get-StartMapOfMode {
     return Get-Random -InputObject $installedMaps
 }
 
+<#
+.SYNOPSIS
+Makes sure server\cstrike\local.cfg exists and holds an RCON password.
+
+.DESCRIPTION
+The Server Control window sends its commands over RCON and reads the
+password from this file. fun_modes.amxx runs local.cfg on every map start.
+The password is random and only lives on this PC, the file is not in git.
+#>
+function Initialize-LocalConfig {
+    $localConfig = Join-Path $CstrikeDir 'local.cfg'
+    if ((Test-Path $localConfig) -and (Select-String -Path $localConfig -Pattern '^\s*rcon_password\s+"[^"]+"' -Quiet)) {
+        return
+    }
+
+    $characters = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789'.ToCharArray()
+    $password = -join (1..16 | ForEach-Object { Get-Random -InputObject $characters })
+
+    $lines = @()
+    if (-not (Test-Path $localConfig)) {
+        $lines += '// Settings of this PC, written by the Server Control window and the start script.'
+        $lines += '// Runs after the mode config on every map. Not part of the package, never overwritten.'
+    }
+    $lines += "rcon_password `"$password`""
+    Add-Content -Path $localConfig -Value $lines -Encoding Ascii
+}
+
 if (-not (Test-Path $HldsExe)) {
     Write-Host 'The server is not installed yet. Please run 1_INSTALL.bat first.' -ForegroundColor Red
     exit 1
 }
 
+Initialize-LocalConfig
 $startMode = Read-StartMode
 $startMap = Get-StartMapOfMode -ModeId $startMode
 $lanAddress = Get-LanAddress

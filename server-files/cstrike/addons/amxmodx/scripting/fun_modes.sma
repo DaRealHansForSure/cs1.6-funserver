@@ -19,6 +19,7 @@
 #define TASK_VOTE_END 4100
 #define TASK_MAP_CHANGE 4200
 #define TASK_BOT_QUOTA 4300
+#define LOCAL_CONFIG "local.cfg"
 
 // YaPB puts the previous map's yb_quota back a moment after the map started
 // (yb_ignore_cvars_on_changelevel), so the value from the configs is applied
@@ -82,6 +83,13 @@ public plugin_cfg()
     if (findMapTypeConfig(mapTypeConfig, charsmax(mapTypeConfig))) {
         server_cmd("exec %s", mapTypeConfig);
         log_amx("Map type settings: %s", mapTypeConfig);
+    }
+
+    // local.cfg holds what the host set in the Server Control window (server
+    // name, RCON password ...). It lives only in server\cstrike, the installer
+    // never overwrites it, and it runs last so it wins over the mode defaults.
+    if (file_exists(LOCAL_CONFIG)) {
+        server_cmd("exec %s", LOCAL_CONFIG);
     }
     server_exec();
 
