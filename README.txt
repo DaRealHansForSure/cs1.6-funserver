@@ -164,6 +164,44 @@ SURF
   server-files\cstrike\modes\maps\surf.cfg and is undone on the next map.
   The same works for any map type: modes\maps\<prefix>.cfg runs on every
   map whose name starts with <prefix>_ (e.g. kz.cfg for kz_ maps).
+  And for a single map: modes\maps\<mapname>.cfg (e.g. de_rats.cfg), which
+  runs after the map type file.
+
+
+BOTS (YaPB)
+-----------
+
+Set in the Server Control window, Settings tab, for every mode:
+  Skill            Newbie, Easy, Normal, Hard, Expert (yb_difficulty 0 to 4)
+  Radio and voice  Silent, Radio only, Radio and voice (yb_radio_mode)
+  Chat             on/off and how often a dead bot writes (yb_chat,
+                   yb_chat_percent)
+  Bots per mode    how many bots fill each mode (yb_quota)
+Without the window, put the same lines into server\cstrike\local_bots.cfg,
+for example  yb_difficulty "3"
+
+Map rules win over these: surf maps run without bots, the rats maps
+(de_rats, de_rats4, cs_rats2) with 4 bots on Hard, because bots handle the
+jumps onto chairs and shelves badly there. See server-files\cstrike\modes\
+maps\de_rats.cfg to change that.
+
+The chat lines are in server\cstrike\addons\yapb\conf\lang\en_chat.cfg,
+grouped in [KILLED] (%v = victim), [WELCOME], [DEADCHAT] and [REPLIES].
+
+Fixing bot routes on a map (graph editor):
+  Bots walk along a node graph per map, downloaded from the YaPB database
+  or built by YaPB itself. Where bots get stuck, you can fix it in game.
+  As admin, on the map, in the game console:
+    yb graph acquire_editor   take the editor rights on this server
+    yb graph on noclip        show the nodes and fly through walls
+    yb graphmenu              menu: add node, create paths, autowaypoint
+    yb graph add              add a node where you stand
+    yb graph delete nearest   remove the node next to you
+    yb graph check            look for errors
+    yb graph save             save to addons\yapb\data\graph\<map>.graph
+    yb graph off              back to normal
+  Tip: the rats maps need nodes on top of chairs and shelves, connected
+  with jump paths (in the path menu).
 
 
 BINDING KEYS (in the CS console, key ^)

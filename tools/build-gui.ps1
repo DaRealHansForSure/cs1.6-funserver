@@ -10,6 +10,9 @@ $PackageRoot = Split-Path -Parent $PSScriptRoot
 $ProjectFile = Join-Path $PackageRoot 'gui\ServerControl\ServerControl.csproj'
 $TestProjectFile = Join-Path $PackageRoot 'gui\ServerControl.Tests\ServerControl.Tests.csproj'
 $PublishDir = Join-Path $PackageRoot 'gui\publish'
+# Own build folders, so a window that was started from gui\...\bin can not
+# lock the files this build has to write.
+$ArtifactsDir = Join-Path $PackageRoot 'gui\.artifacts'
 $TargetExe = Join-Path $PackageRoot '4_SERVER_CONTROL.exe'
 
 $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -30,7 +33,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host '==> Publishing' -ForegroundColor Cyan
 & $dotnet.Source publish $ProjectFile -nologo -v q -c Release -r win-x64 --self-contained true `
-    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o $PublishDir
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true --artifacts-path $ArtifactsDir -o $PublishDir
 if ($LASTEXITCODE -ne 0) {
     Write-Host 'Publishing failed.' -ForegroundColor Red
     exit 1

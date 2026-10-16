@@ -20,6 +20,9 @@ public sealed class PackagePaths {
 
     public string ModeConfig(string modeId) => Path.Combine(CstrikeDir, "modes", modeId + ".cfg");
 
+    /// <summary>Bot settings from the window for every mode (difficulty, chat, radio).</summary>
+    public string BotsLocalConfig => Path.Combine(CstrikeDir, "local_bots.cfg");
+
     /// <summary>Per-mode settings from the window, run by fun_modes right after the mode config.</summary>
     public string ModeLocalConfig(string modeId) => Path.Combine(CstrikeDir, $"local_{modeId}.cfg");
     public string AmxLogsDir => Path.Combine(CstrikeDir, "addons", "amxmodx", "logs");

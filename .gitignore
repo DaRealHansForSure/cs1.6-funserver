@@ -17,5 +17,6 @@ custom-maps/*
 gui/**/bin/
 gui/**/obj/
 gui/publish/
+gui/.artifacts/
 4_SERVER_CONTROL.exe
 tools/previews/

@@ -40,6 +40,52 @@
             <CheckBox Content="Fun rounds on" IsChecked="{Binding FunRoundsEnabled}" />
             <CheckBox Content="Only admins may use the hook" IsChecked="{Binding HookAdminOnly}" />
 
+            <TextBlock Text="Bots (every mode)" Style="{StaticResource SectionTitle}" Margin="0,16,0,6" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="220" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Skill" VerticalAlignment="Center" />
+                <ListBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding DifficultyChoices}" SelectedItem="{Binding BotDifficulty}"
+                         Style="{StaticResource PlainList}" ItemContainerStyle="{StaticResource FilterItem}" Margin="0,3">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Title}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Grid.Row="1" Text="Radio and voice" VerticalAlignment="Center" />
+                <ListBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding RadioChoices}" SelectedItem="{Binding BotRadio}"
+                         Style="{StaticResource PlainList}" ItemContainerStyle="{StaticResource FilterItem}" Margin="0,3">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Title}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Grid.Row="2" Text="Chat chance when dead (0 to 100 %)" VerticalAlignment="Center" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding BotChatPercent, UpdateSourceTrigger=PropertyChanged}" Margin="0,3" Width="60" HorizontalAlignment="Left" />
+            </Grid>
+            <CheckBox Content="Bots write chat messages" IsChecked="{Binding BotChatEnabled}" />
+            <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap" Margin="0,4,0,0"
+                       Text="The rats maps use 4 bots at Hard skill (modes\maps\de_rats.cfg and friends), surf maps no bots." />
+
             <TextBlock Text="Bots per mode (they leave when humans join)" Style="{StaticResource SectionTitle}" Margin="0,16,0,6" />
             <ItemsControl ItemsSource="{Binding BotsPerMode}">
                 <ItemsControl.ItemTemplate>
