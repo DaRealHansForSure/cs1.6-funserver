@@ -110,6 +110,41 @@ public class StatusParserTests {
     }
 }
 
+public class AmxLogTests {
+    [Fact]
+    public void FindsTheLastModeAndMapChange() {
+        const string log =
+            "L 10/17/2026 - 00:27:57: -------- Mapchange to de_rats --------\n" +
+            "L 10/17/2026 - 00:27:57: [fun_modes.amxx] Active mode: classic\n" +
+            "L 10/17/2026 - 00:34:09: -------- Mapchange to fy_iceworld --------\n" +
+            "L 10/17/2026 - 00:34:10: [fun_modes.amxx] Active mode: deathrun\n" +
+            "L 10/17/2026 - 00:35:00: [admin.amxx] Login: \"ICSharp\" became an admin\n";
+
+        AmxLogState state = ModeLog.Parse(new StringReader(log));
+
+        Assert.Equal("deathrun", state.ActiveMode);
+        Assert.Equal(new DateTime(2026, 10, 17, 0, 34, 9), state.MapStartedAt);
+    }
+
+    [Fact]
+    public void EmptyLogKnowsNothing() {
+        AmxLogState state = ModeLog.Parse(new StringReader(""));
+        Assert.Null(state.ActiveMode);
+        Assert.Null(state.MapStartedAt);
+    }
+}
+
+public class DurationTests {
+    [Theory]
+    [InlineData(30, "under 1 min")]
+    [InlineData(45 * 60, "45 min")]
+    [InlineData(2 * 3600 + 5 * 60, "2 h 05 min")]
+    [InlineData(27 * 3600, "1 d 3 h")]
+    public void FormatsRunTimes(int seconds, string expected) {
+        Assert.Equal(expected, ServerControl.ViewModels.ServerConnection.FormatDuration(TimeSpan.FromSeconds(seconds)));
+    }
+}
+
 public class RconPacketTests {
     [Fact]
     public void StripsHeaderAndPrintMarker() {

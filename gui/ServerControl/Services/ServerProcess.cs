@@ -26,6 +26,17 @@ public sealed class ServerProcess(PackagePaths paths) {
     private Process? _tv;
 
     public bool IsRunning => FindHlds() != null;
+
+    /// <summary>When hlds.exe was started, also for a server started by the .bat.</summary>
+    public DateTime? ServerStartedAt {
+        get {
+            try {
+                return FindHlds()?.StartTime;
+            } catch (Exception exception) when (exception is InvalidOperationException or Win32Exception) {
+                return null;
+            }
+        }
+    }
     public bool IsTvRunning => _tv != null && !_tv.HasExited;
 
     public static IPAddress FindLanAddress() {
