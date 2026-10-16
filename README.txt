@@ -60,7 +60,7 @@ THE FOUR MODES
 --------------
 
 Type  /mode  in chat, then everyone votes for 15 seconds.
-Admins switch immediately with:  amx_mode classic|gungame|zombie|deathmatch
+Admins switch immediately with:  amx_funmode classic|gungame|zombie|deathmatch
 
   Classic Fun   Normal CS with Hook, Grab, Parachute and auto bunnyhop
                 (hold the space bar).

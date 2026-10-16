@@ -9,7 +9,7 @@
 //                           rocket, speed for one player or everybody
 //   5. AMX Mod X admin menu kick, ban, slay, cvars and so on
 //
-// Every action runs the existing console command (amx_mode, amx_map,
+// Every action runs the existing console command (amx_funmode, amx_map,
 // amx_glow ...) as if the admin had typed it, so access checks, messages
 // and logging stay in one place.
 
@@ -186,7 +186,7 @@ public handleModeMenu(playerId, menu, item)
         return PLUGIN_HANDLED;
     }
 
-    amxclient_cmd(playerId, "amx_mode", MODE_IDS[item]);
+    amxclient_cmd(playerId, "amx_funmode", MODE_IDS[item]);
     return PLUGIN_HANDLED;
 }
 

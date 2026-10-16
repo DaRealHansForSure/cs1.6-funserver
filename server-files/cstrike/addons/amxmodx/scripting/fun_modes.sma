@@ -1,7 +1,7 @@
 // Fun Modes - switches the server between the four LAN game modes.
 //
 // Players start a vote with "/mode" in chat, admins can switch directly
-// with "amx_mode <name>". On a switch the plugin stores the new mode,
+// with "amx_funmode <name>". On a switch the plugin stores the new mode,
 // points mapcyclefile at the mode's own map list and changes to a random map
 // from it. On every map start it executes modes/base.cfg followed by
 // modes/<mode>.cfg, so each mode always starts from the same clean settings.
@@ -53,7 +53,7 @@ public plugin_init()
 
     register_clcmd("say /mode", "cmdStartVote");
     register_clcmd("say_team /mode", "cmdStartVote");
-    register_concmd("amx_mode", "cmdSetMode", ADMIN_MAP, "<classic|gungame|zombie|deathmatch> - switches the mode right away");
+    register_concmd("amx_funmode", "cmdSetMode", ADMIN_MAP, "<classic|gungame|zombie|deathmatch> - switches the mode right away");
 
     get_fun_mode(gActiveMode, charsmax(gActiveMode));
 }
