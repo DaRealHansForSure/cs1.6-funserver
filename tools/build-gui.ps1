@@ -39,6 +39,13 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Copy-Item -Force (Join-Path $PublishDir 'ServerControl.exe') $TargetExe
+# An open window locks the exe. The copy must not fail silently, or the
+# package keeps the old version while this script says done.
+try {
+    Copy-Item -Force (Join-Path $PublishDir 'ServerControl.exe') $TargetExe -ErrorAction Stop
+} catch {
+    Write-Host "Could not replace 4_SERVER_CONTROL.exe, it is probably open. Close the window and run this again." -ForegroundColor Red
+    exit 1
+}
 $sizeMb = [math]::Round((Get-Item $TargetExe).Length / 1MB)
 Write-Host "Done: $TargetExe ($sizeMb MB)" -ForegroundColor Green
