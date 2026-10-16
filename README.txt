@@ -114,6 +114,9 @@ SURF
   Deathmatch (with instant respawn and random weapons).
   How to surf: hold strafe (A or D) towards the slanted ramp and steer
   with the mouse, do not press W.
+  Stuck on the ramp? Type  fps_max 100  in the game console. With more
+  than 100 FPS the old engine's physics break on ramps. Every player has
+  to set this in their own game, the server can not do it for them.
   On surf maps the server switches to surf physics (sv_airaccelerate 100),
   turns fall damage and bots off. This comes from
   server-files\cstrike\modes\maps\surf.cfg and is undone on the next map.
