@@ -52,6 +52,11 @@ It talks to the server over RCON with a random password that lives only
 in server\cstrike\local.cfg. A server started with 2_START_SERVER.bat
 works with the window too.
 
+Map pictures: the installer downloads one screenshot per fun map from
+GameBanana into tools\previews\ (the ModId column of tools\maps.csv),
+stock maps show their radar image. For any other map put a <mapname>.jpg
+or .png into tools\previews\, the installer never replaces it.
+
 The exe is built from the source in gui\ with
   powershell -ExecutionPolicy Bypass -File tools\build-gui.ps1
 which needs the .NET 10 SDK once (winget install Microsoft.DotNet.SDK.10).

@@ -27,6 +27,7 @@ $DownloadDir = Join-Path $PSScriptRoot 'downloads'
 $WorkDir = Join-Path $PSScriptRoot 'work'
 $SteamCmdDir = Join-Path $PSScriptRoot 'steamcmd'
 $MapListFile = Join-Path $PSScriptRoot 'maps.csv'
+$PreviewsDir = Join-Path $PSScriptRoot 'previews'
 
 $BrowserUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
 $HldsInstallAttempts = 3
@@ -617,6 +618,87 @@ function Install-QuakeSounds {
     Write-Note "$installedCount of $($QuakeSoundMapping.Count) sounds in place"
 }
 
+<#
+.SYNOPSIS
+Downloads one screenshot per map from GameBanana for the map tiles of the
+Server Control window, as tools\previews\<map>.jpg.
+
+.DESCRIPTION
+The ModId column of maps.csv names the GameBanana page of each map. A
+picture that is already there is kept, so pictures the owner put there by
+hand win and repeated runs cost nothing. Stock maps need no download, the
+window shows their radar images. A failure only costs the picture.
+#>
+function Install-MapPreviews {
+    Write-Step 'Map pictures for the Server Control window'
+
+    if (-not (Test-Path $MapListFile)) {
+        return
+    }
+    New-Item -ItemType Directory -Force -Path $PreviewsDir | Out-Null
+
+    $downloadedCount = 0
+    $existingCount = 0
+    foreach ($map in Import-Csv $MapListFile) {
+        if (-not $map.ModId) {
+            continue
+        }
+
+        $existingPreview = Get-ChildItem -Path $PreviewsDir -File -Filter "$($map.Name).*" | Select-Object -First 1
+        if ($existingPreview) {
+            $existingCount++
+            continue
+        }
+
+        try {
+            $imageUrl = Get-MapPreviewUrl -ModId $map.ModId
+            if (-not $imageUrl) {
+                Write-Problem "$($map.Name): no jpg or png picture on GameBanana."
+                continue
+            }
+
+            $extension = [IO.Path]::GetExtension($imageUrl).ToLowerInvariant()
+            $targetPath = Join-Path $PreviewsDir ($map.Name + $extension)
+            $partialPath = "$targetPath.part"
+            Invoke-WebRequest -Uri $imageUrl -OutFile $partialPath -UseBasicParsing -UserAgent $BrowserUserAgent
+            Move-Item -Force $partialPath $targetPath
+            $downloadedCount++
+        } catch {
+            Write-Problem "$($map.Name) picture failed: $($_.Exception.Message)"
+        }
+
+        # Two requests per map, a short pause keeps us a polite API user.
+        Start-Sleep -Milliseconds 300
+    }
+
+    Write-Note "$downloadedCount pictures downloaded, $existingCount already there"
+}
+
+<#
+.SYNOPSIS
+Returns the URL of the first jpg or png screenshot of a GameBanana mod, in
+the 530 px size when there is one (big enough for a tile, a fraction of the
+full size). The window reads jpg and png, webp would need an extra codec.
+#>
+function Get-MapPreviewUrl {
+    param([string]$ModId)
+
+    $profilePage = Invoke-RestMethod -Uri "https://gamebanana.com/apiv11/Mod/$ModId/ProfilePage" -UseBasicParsing -UserAgent $BrowserUserAgent
+    foreach ($image in @($profilePage._aPreviewMedia._aImages)) {
+        if (-not $image) {
+            continue
+        }
+
+        foreach ($fileName in @($image._sFile530, $image._sFile220, $image._sFile)) {
+            $isReadableFormat = $fileName -and ([IO.Path]::GetExtension($fileName).ToLowerInvariant() -in @('.jpg', '.jpeg', '.png'))
+            if ($isReadableFormat) {
+                return "$($image._sBaseUrl)/$fileName"
+            }
+        }
+    }
+    return $null
+}
+
 function Install-OwnMaps {
     Write-Step 'Custom maps from the custom-maps folder'
 
@@ -867,6 +949,7 @@ function Invoke-ServerInstall {
     Install-FunFiles
     Install-QuakeSounds
     Install-MapPack
+    Install-MapPreviews
     Install-OwnMaps
     Update-MapCycles
     Add-FirewallRules
@@ -880,6 +963,7 @@ function Invoke-MapsInstall {
     New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
     Install-QuakeSounds
     Install-MapPack
+    Install-MapPreviews
     Install-OwnMaps
     Update-MapCycles
 }
