@@ -218,6 +218,25 @@
         </Setter>
     </Style>
 
+    <!-- Progress like the old Steam download bar: sunken box, gold fill. -->
+    <Style TargetType="ProgressBar">
+        <Setter Property="Height" Value="14" />
+        <Setter Property="Foreground" Value="{StaticResource SelectionBrush}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ProgressBar">
+                    <Border Background="{StaticResource DeepBrush}" BorderBrush="{StaticResource BevelDarkBrush}" BorderThickness="1,1,0,0">
+                        <Border BorderBrush="{StaticResource BevelLightBrush}" BorderThickness="0,0,1,1" Padding="1">
+                            <Grid x:Name="PART_Track">
+                                <Border x:Name="PART_Indicator" Background="{TemplateBinding Foreground}" HorizontalAlignment="Left" />
+                            </Grid>
+                        </Border>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Scroll bars in the same style: flat olive track, raised thumb. -->
     <Style TargetType="ScrollBar">
         <Setter Property="Background" Value="{StaticResource DeepBrush}" />

@@ -134,6 +134,81 @@ public class AmxLogTests {
     }
 }
 
+public class StatsTests {
+    private static readonly string[] GameLog = [
+        "L 10/17/2026 - 00:34:10: Started map \"fy_iceworld\" (CRC \"1458019751\")",
+        "L 10/17/2026 - 00:34:24: \"Peter<3><STEAM_ID_LAN><CT>\" killed \"bjaren<29><BOT><TERRORIST>\" with \"ak47\"",
+        "L 10/17/2026 - 00:34:30: \"Peter<3><STEAM_ID_LAN><CT>\" killed \"Simon<4><STEAM_ID_LAN><TERRORIST>\" with \"knife\"",
+        "L 10/17/2026 - 00:34:40: \"Peter<3><STEAM_ID_LAN><CT>\" killed \"bjaren<29><BOT><TERRORIST>\" with \"ak47\"",
+        "L 10/17/2026 - 00:35:00: \"bjaren<29><BOT><TERRORIST>\" killed \"Peter<3><STEAM_ID_LAN><CT>\" with \"grenade\"",
+        "L 10/17/2026 - 00:35:10: \"Simon<4><STEAM_ID_LAN><TERRORIST>\" committed suicide with \"world\"",
+        "L 10/17/2026 - 00:35:20: \"Simon<4><STEAM_ID_LAN><TERRORIST>\" say \"Peter killed me with knife\"",
+    ];
+
+    [Fact]
+    public void CountsKillsDeathsAndWeapons() {
+        IReadOnlyList<PlayerStats> board = StatsReader.BuildLeaderboard(GameLog, null);
+
+        PlayerStats peter = board[0];
+        Assert.Equal("Peter", peter.Name);
+        Assert.Equal(3, peter.Kills);
+        Assert.Equal(1, peter.Deaths);
+        Assert.Equal(1, peter.KnifeKills);
+        Assert.Equal("ak47", peter.FavoriteWeapon);
+        Assert.Equal(3.0, peter.KillDeathRatio);
+
+        PlayerStats bot = board.Single(player => player.Name == "bjaren");
+        Assert.True(bot.IsBot);
+        Assert.Equal(1, bot.GrenadeKills);
+
+        PlayerStats simon = board.Single(player => player.Name == "Simon");
+        Assert.Equal(2, simon.Deaths);
+        Assert.Equal(1, simon.Suicides);
+        Assert.Equal(0, simon.Kills);
+    }
+
+    [Fact]
+    public void LeavesOutKillsBeforeThePeriod() {
+        IReadOnlyList<PlayerStats> board = StatsReader.BuildLeaderboard(GameLog, new DateTime(2026, 10, 17, 0, 34, 35));
+        Assert.Equal(1, board.Single(player => player.Name == "Peter").Kills);
+    }
+
+    [Fact]
+    public void ListsMapsWithModeAndDuration() {
+        string[] amxLog = [
+            "L 10/17/2026 - 00:27:57: -------- Mapchange to de_rats --------",
+            "L 10/17/2026 - 00:27:57: [fun_modes.amxx] Active mode: classic",
+            "L 10/17/2026 - 00:34:09: -------- Mapchange to fy_iceworld --------",
+            "L 10/17/2026 - 00:34:10: [fun_modes.amxx] Active mode: deathmatch",
+        ];
+        var now = new DateTime(2026, 10, 17, 0, 50, 9);
+
+        IReadOnlyList<MapPlay> plays = StatsReader.BuildMapsPlayed(amxLog, new DateTime(2026, 10, 16, 12, 0, 0), now, isServerRunning: true);
+
+        Assert.Equal(2, plays.Count);
+        Assert.Equal("de_rats", plays[0].Map);
+        Assert.Equal("classic", plays[0].ModeId);
+        Assert.Equal(TimeSpan.FromSeconds(372), plays[0].Duration);
+        Assert.False(plays[0].IsRunning);
+        Assert.Equal("deathmatch", plays[1].ModeId);
+        Assert.Equal(TimeSpan.FromMinutes(16), plays[1].Duration);
+        Assert.True(plays[1].IsRunning);
+    }
+
+    [Theory]
+    [InlineData("11:28", 11 * 60 + 28)]
+    [InlineData("0:05", 5)]
+    public void ReadsTimeLeft(string text, int expectedSeconds) {
+        Assert.True(ServerControl.ViewModels.StatsTabViewModel.TryParseTimeLeft(text, out TimeSpan left));
+        Assert.Equal(TimeSpan.FromSeconds(expectedSeconds), left);
+    }
+
+    [Fact]
+    public void RejectsEmptyTimeLeft() {
+        Assert.False(ServerControl.ViewModels.StatsTabViewModel.TryParseTimeLeft("", out _));
+    }
+}
+
 public class DurationTests {
     [Theory]
     [InlineData(30, "under 1 min")]

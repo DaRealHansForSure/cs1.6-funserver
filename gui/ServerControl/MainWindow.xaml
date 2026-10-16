@@ -24,6 +24,9 @@
         <DataTemplate DataType="{x:Type vm:FunTabViewModel}">
             <views:FunTabView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StatsTabViewModel}">
+            <views:StatsTabView />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:SettingsTabViewModel}">
             <views:SettingsTabView />
         </DataTemplate>

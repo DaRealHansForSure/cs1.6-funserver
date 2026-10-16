@@ -18,6 +18,7 @@ public sealed partial class MainViewModel : ObservableObject {
     public PlayersTabViewModel PlayersTab { get; }
     public FunTabViewModel FunTab { get; }
     public SettingsTabViewModel SettingsTab { get; }
+    public StatsTabViewModel StatsTab { get; }
     public IReadOnlyList<TabViewModel> Tabs { get; }
 
     [ObservableProperty]
@@ -36,7 +37,8 @@ public sealed partial class MainViewModel : ObservableObject {
         PlayersTab = new PlayersTabViewModel(Connection);
         FunTab = new FunTabViewModel(Connection);
         SettingsTab = new SettingsTabViewModel(Connection);
-        Tabs = [ServerTab, MapsTab, PlayersTab, FunTab, SettingsTab];
+        StatsTab = new StatsTabViewModel(Connection);
+        Tabs = [ServerTab, MapsTab, PlayersTab, FunTab, StatsTab, SettingsTab];
         _selectedTab = ServerTab;
 
         _refreshTimer = new DispatcherTimer { Interval = RefreshInterval };
@@ -46,6 +48,8 @@ public sealed partial class MainViewModel : ObservableObject {
     }
 
     partial void OnSelectedTabChanged(TabViewModel value) {
+        // The stats read log files, so they only refresh while somebody looks.
+        StatsTab.IsVisible = value == StatsTab;
         _ = value.ActivateAsync();
     }
 

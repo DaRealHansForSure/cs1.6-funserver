@@ -46,6 +46,9 @@ SERVER CONTROL WINDOW
              noclip, slay, kick
   Fun        force the next fun round, switch mode, restart round,
              hook on/off, chat message to everybody
+  Stats      map time bar (played, left, next map), leaderboard of this map
+             or the last 12 hours (kills, deaths, K/D, knife, HE, best
+             weapon), and every map played tonight with how long it ran
   Settings   server name, join password, max players, fun rounds,
              hook speed, bots per mode (saved in server\cstrike\local.cfg
              and local_<mode>.cfg)
