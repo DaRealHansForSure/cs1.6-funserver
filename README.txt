@@ -99,6 +99,7 @@ Custom fun plugins (source code included, compiled during installation):
   - fun_rounds     surprise fun rounds in Classic (knives, AWP, low gravity ...)
   - fun_deathrun   the Deathrun mode (one trapper, everybody runs)
   - fun_spawns     random spawns all over the map in GunGame and Deathmatch
+  - fun_streaks    kill streak rewards: glow, +50 HP, rocket jump
 
 Also enabled: miscstats (announcements like "Headshot", "Monster Kill",
 "Humiliation") and statsx (/rank, /top15).
@@ -138,9 +139,15 @@ that round, announced at the round start:
   awp       AWP only                 deagle    one bullet, one shot kills,
   lowgrav   low gravity                        every kill gives a bullet
   speed     everybody runs fast      hewar     endless HE grenades
-                                     ghost     everybody almost invisible
+  juggernaut  one player (alone as T) gets  ghost     everybody almost invisible
+              1000 HP, armor and an M249,
+              everybody else hunts them
 Admins pick the next round with  amx_funround <name|random|off>
 Change how often:  fun_rounds_every 3   (off: fun_rounds_enabled 0)
+
+Kill streaks (every mode): 5 kills without dying give a short gold glow
+and +50 HP (up to 255), every 10 kills also a rocket jump and a message
+to everybody. Dying starts again at 0. Off: fun_streaks_enabled 0
 Not on knife, HE, deathrun and surf maps, those have their own rules.
 
 DEATHRUN

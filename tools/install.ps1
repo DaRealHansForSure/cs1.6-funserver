@@ -498,7 +498,8 @@ function Set-AmxPluginList {
         'fun_menu.amxx',
         'fun_rounds.amxx',
         'fun_deathrun.amxx',
-        'fun_spawns.amxx'
+        'fun_spawns.amxx',
+        'fun_streaks.amxx'
     )
     Add-BlockOnce -FilePath $pluginsIni -Lines (@($FunPluginsMarker) + $funPlugins)
 

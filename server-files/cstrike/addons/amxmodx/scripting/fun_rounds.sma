@@ -8,6 +8,7 @@
 //   deagle    one bullet Deagle, every kill gives a new bullet, one shot kills
 //   hewar     HE grenades only, refilled endlessly
 //   ghost     everybody is almost invisible
+//   juggernaut one player with 1000 HP and an M249 against everybody else
 //
 // Cvars: fun_rounds_enabled (1), fun_rounds_every (3 = every third round).
 // Admins force the next round with: amx_funround <name|random|off>
@@ -45,6 +46,10 @@ const Float:FAST_SPEED_FACTOR = 1.8;
 const Float:ONE_SHOT_DAMAGE = 500.0;
 const GHOST_ALPHA = 25;
 const AWP_RESERVE_AMMO = 30;
+const JUGGERNAUT_HEALTH = 1000;
+const JUGGERNAUT_ARMOR = 200;
+const JUGGERNAUT_RESERVE_AMMO = 200;
+const NO_PLAYER = 0;
 
 enum _:FunEvent {
     EVENT_KNIVES,
@@ -54,7 +59,8 @@ enum _:FunEvent {
     EVENT_HEADSHOT,
     EVENT_DEAGLE,
     EVENT_HE_WAR,
-    EVENT_GHOST
+    EVENT_GHOST,
+    EVENT_JUGGERNAUT
 };
 
 new const EVENT_IDS[FunEvent][] = {
@@ -65,7 +71,8 @@ new const EVENT_IDS[FunEvent][] = {
     "headshot",
     "deagle",
     "hewar",
-    "ghost"
+    "ghost",
+    "juggernaut"
 };
 
 new const EVENT_TITLES[FunEvent][] = {
@@ -76,7 +83,8 @@ new const EVENT_TITLES[FunEvent][] = {
     "HEADSHOTS ONLY",
     "ONE BULLET DEAGLE",
     "HE GRENADE WAR",
-    "GHOST ROUND"
+    "GHOST ROUND",
+    "JUGGERNAUT"
 };
 
 new const EVENT_HINTS[FunEvent][] = {
@@ -87,7 +95,8 @@ new const EVENT_HINTS[FunEvent][] = {
     "Body shots do nothing.",
     "One shot kills. Every kill gives you a new bullet.",
     "Endless grenades, no guns.",
-    "Everybody is almost invisible."
+    "Everybody is almost invisible.",
+    "One player with 1000 HP and an M249 against everybody else."
 };
 
 new const SPECIAL_MAP_PATTERN[][] = {
@@ -107,6 +116,7 @@ new gRoundsPlayed;
 new gEnabledCvar;
 new gEveryCvar;
 new gHudSync;
+new gJuggernautId = NO_PLAYER;
 
 public plugin_init()
 {
@@ -115,7 +125,7 @@ public plugin_init()
     gEnabledCvar = create_cvar("fun_rounds_enabled", "1", _, "Fun rounds on (1) or off (0)", true, 0.0, true, 1.0);
     gEveryCvar = create_cvar("fun_rounds_every", "3", _, "A fun round every n rounds", true, 1.0, true, 20.0);
 
-    register_concmd("amx_funround", "cmdForceEvent", FUN_ROUND_ADMIN_FLAG, "<knives|awp|lowgrav|speed|headshot|deagle|hewar|ghost|random|off> - sets the next round");
+    register_concmd("amx_funround", "cmdForceEvent", FUN_ROUND_ADMIN_FLAG, "<knives|awp|lowgrav|speed|headshot|deagle|hewar|ghost|juggernaut|random|off> - sets the next round");
 
     register_event("HLTV", "onNewRound", "a", "1=0", "2=0");
     register_event("DeathMsg", "onDeath", "a");
@@ -167,7 +177,7 @@ public cmdForceEvent(adminId, level, commandId)
     }
 
     if (eventIndex == NO_EVENT) {
-        console_print(adminId, "Unknown fun round. Possible: knives, awp, lowgrav, speed, headshot, deagle, hewar, ghost, random, off");
+        console_print(adminId, "Unknown fun round. Possible: knives, awp, lowgrav, speed, headshot, deagle, hewar, ghost, juggernaut, random, off");
         return PLUGIN_HANDLED;
     }
 
@@ -184,6 +194,7 @@ public onNewRound()
 {
     remove_task(TASK_HE_REFILL);
     gActiveEvent = NO_EVENT;
+    gJuggernautId = NO_PLAYER;
 
     if (!gIsEnabledHere || !get_pcvar_num(gEnabledCvar)) {
         return;
@@ -195,8 +206,20 @@ public onNewRound()
         return;
     }
 
+    // HLTV fires before the players respawn, so the teams set here spawn right.
+    if (gActiveEvent == EVENT_JUGGERNAUT && !setUpJuggernaut()) {
+        gActiveEvent = NO_EVENT;
+        return;
+    }
+
     gLastEvent = gActiveEvent;
     announceEvent(gActiveEvent);
+    if (gActiveEvent == EVENT_JUGGERNAUT) {
+        new juggernautName[MAX_NAME_LENGTH];
+        get_user_name(gJuggernautId, juggernautName, charsmax(juggernautName));
+        client_print(0, print_chat, "[Fun] %s is the Juggernaut. Everybody else: hunt them down!", juggernautName);
+        log_amx("Juggernaut round: %s", juggernautName);
+    }
 
     if (gActiveEvent == EVENT_HE_WAR) {
         set_task(HE_REFILL_INTERVAL_SECONDS, "refillGrenades", TASK_HE_REFILL, _, _, "b");
@@ -292,10 +315,56 @@ public applyEventToPlayer(taskId)
         case EVENT_HE_WAR: {
             equipOnly(playerId, "weapon_hegrenade");
         }
+        case EVENT_JUGGERNAUT: {
+            if (playerId == gJuggernautId) {
+                equipJuggernaut(playerId);
+            }
+        }
         case EVENT_GHOST: {
             set_user_rendering(playerId, kRenderFxNone, 0, 0, 0, kRenderTransAlpha, GHOST_ALPHA);
         }
     }
+}
+
+/**
+ * Picks a random player as the Juggernaut and puts them alone on the
+ * Terrorist side, everybody else on CT. The normal team balance mixes the
+ * teams again for the next round. Needs at least two players.
+ */
+bool:setUpJuggernaut()
+{
+    new candidates[MAX_PLAYERS], candidateCount = 0;
+    for (new playerId = 1; playerId <= MaxClients; playerId++) {
+        if (!is_user_connected(playerId) || is_user_hltv(playerId)) {
+            continue;
+        }
+        new CsTeams:team = cs_get_user_team(playerId);
+        if (team == CS_TEAM_T || team == CS_TEAM_CT) {
+            candidates[candidateCount++] = playerId;
+        }
+    }
+    if (candidateCount < 2) {
+        return false;
+    }
+
+    gJuggernautId = candidates[random(candidateCount)];
+    for (new i = 0; i < candidateCount; i++) {
+        if (candidates[i] == gJuggernautId) {
+            cs_set_user_team(candidates[i], CS_TEAM_T, CS_T_LEET);
+        } else {
+            cs_set_user_team(candidates[i], CS_TEAM_CT, CS_CT_URBAN);
+        }
+    }
+    return true;
+}
+
+equipJuggernaut(playerId)
+{
+    equipOnly(playerId, "weapon_m249");
+    cs_set_user_bpammo(playerId, CSW_M249, JUGGERNAUT_RESERVE_AMMO);
+    set_user_health(playerId, JUGGERNAUT_HEALTH);
+    cs_set_user_armor(playerId, JUGGERNAUT_ARMOR, CS_ARMOR_VESTHELM);
+    set_user_rendering(playerId, kRenderFxGlowShell, 255, 30, 30, kRenderNormal, 25);
 }
 
 /**

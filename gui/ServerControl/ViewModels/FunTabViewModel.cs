@@ -17,6 +17,7 @@ public sealed partial class FunTabViewModel(ServerConnection connection) : TabVi
         new("deagle", "One bullet Deagle"),
         new("hewar", "HE war"),
         new("ghost", "Ghosts"),
+        new("juggernaut", "Juggernaut"),
     ];
 
     public IReadOnlyList<GameMode> Modes { get; } = GameModes.All;
