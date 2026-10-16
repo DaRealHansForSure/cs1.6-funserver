@@ -1,0 +1,93 @@
+<UserControl x:Class="ServerControl.Views.ServerTabView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock Text="Game mode" Style="{StaticResource SectionTitle}" />
+            <Border Style="{StaticResource SunkenPanel}" Margin="0,0,0,12">
+                <Border Style="{StaticResource SunkenPanelShade}">
+                    <ItemsControl ItemsSource="{Binding Modes}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Command="{Binding DataContext.SelectModeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" HorizontalContentAlignment="Stretch" Padding="8,5">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="Row" Background="Transparent" Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Row" Property="Background" Value="{StaticResource PanelBrush}" />
+                                                </Trigger>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter TargetName="Row" Property="Background" Value="{StaticResource SelectionBrush}" />
+                                                </DataTrigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Text="{Binding Mode.Title}" FontWeight="Bold" Width="130" />
+                                        <TextBlock Text="{Binding Mode.Description}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="{StaticResource MutedBrush}" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                            <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </DockPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+            </Border>
+
+            <TextBlock Text="Start map" Style="{StaticResource SectionTitle}" />
+            <DockPanel Margin="0,0,0,12">
+                <Button DockPanel.Dock="Right" Style="{StaticResource AccentButton}" Content="Start server" Command="{Binding StartServerCommand}" Margin="6,0,0,0" Padding="16,4" />
+                <Button DockPanel.Dock="Right" Content="Choose map..." Command="{Binding ChooseMapCommand}" Margin="6,0,0,0" />
+                <Border Style="{StaticResource SunkenPanel}">
+                    <Border Style="{StaticResource SunkenPanelShade}" Padding="6,4">
+                        <TextBlock Text="{Binding StartMapText}" VerticalAlignment="Center" />
+                    </Border>
+                </Border>
+            </DockPanel>
+
+            <TextBlock Text="Right now" Style="{StaticResource SectionTitle}" />
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="130" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="20" />
+                    <RowDefinition Height="20" />
+                    <RowDefinition Height="20" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Players" Foreground="{StaticResource MutedBrush}" />
+                <TextBlock Grid.Row="0" Grid.Column="1">
+                    <Run Text="{Binding Connection.PlayerCount, Mode=OneWay}" /><Run Text=" of " /><Run Text="{Binding Connection.MaxPlayers, Mode=OneWay}" />
+                </TextBlock>
+                <TextBlock Grid.Row="1" Text="Mode" Foreground="{StaticResource MutedBrush}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Connection.CurrentModeTitle}" />
+                <TextBlock Grid.Row="2" Text="Players join with" Foreground="{StaticResource MutedBrush}" />
+                <TextBlock Grid.Row="2" Grid.Column="1" FontFamily="{StaticResource MonoFont}">
+                    <Run Text="connect " /><Run Text="{Binding Connection.Address, Mode=OneWay}" />
+                </TextBlock>
+            </Grid>
+
+            <TextBlock Text="Package" Style="{StaticResource SectionTitle}" />
+            <WrapPanel>
+                <Button Content="Install or repair" Command="{Binding RunInstallerCommand}" Margin="0,0,6,0" />
+                <Button Content="Update maps" Command="{Binding UpdateMapsCommand}" Margin="0,0,6,0" />
+                <Button Content="Open logs" Command="{Binding OpenLogsCommand}" />
+            </WrapPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

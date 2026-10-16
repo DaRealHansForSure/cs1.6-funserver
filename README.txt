@@ -29,6 +29,33 @@ for private networks (for hlds.exe and for PowerShell).
 Other players only need a normal CS 1.6 (Steam). Missing maps and sounds
 are downloaded quickly from the server automatically when they connect.
 
+Instead of step 3 you can also use the window: 4_SERVER_CONTROL.exe
+(see SERVER CONTROL WINDOW below).
+
+
+SERVER CONTROL WINDOW
+---------------------
+
+4_SERVER_CONTROL.exe controls the whole server with the mouse:
+  Server     pick the mode and first map, start and stop, LAN address
+  Maps       every installed map with a picture, filter by mode,
+             Play = change map now, First map = start the server on it
+  Players    who is on, bots +1 / -1 / off, glow, rocket, godmode,
+             noclip, slay, kick
+  Fun        force the next fun round, switch mode, restart round,
+             hook on/off, chat message to everybody
+  Settings   server name, join password, max players, fun rounds,
+             hook speed (saved in server\cstrike\local.cfg)
+  Console    any server command at the bottom, with the answer
+
+It talks to the server over RCON with a random password that lives only
+in server\cstrike\local.cfg. A server started with 2_START_SERVER.bat
+works with the window too.
+
+The exe is built from the source in gui\ with
+  powershell -ExecutionPolicy Bypass -File tools\build-gui.ps1
+which needs the .NET 10 SDK once (winget install Microsoft.DotNet.SDK.10).
+
 
 WHAT'S INCLUDED
 ---------------

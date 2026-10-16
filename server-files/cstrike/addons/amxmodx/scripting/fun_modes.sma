@@ -20,6 +20,9 @@
 #define TASK_MAP_CHANGE 4200
 #define TASK_BOT_QUOTA 4300
 #define LOCAL_CONFIG "local.cfg"
+#define TASK_LOCAL_CONFIG 4400
+
+const Float:LOCAL_CONFIG_REAPPLY_DELAY_SECONDS = 1.0;
 
 // YaPB puts the previous map's yb_quota back a moment after the map started
 // (yb_ignore_cvars_on_changelevel), so the value from the configs is applied
@@ -88,8 +91,11 @@ public plugin_cfg()
     // local.cfg holds what the host set in the Server Control window (server
     // name, RCON password ...). It lives only in server\cstrike, the installer
     // never overwrites it, and it runs last so it wins over the mode defaults.
+    // On the first map the engine runs server.cfg after this, which would
+    // reset hostname and friends, so local.cfg runs once more a second later.
     if (file_exists(LOCAL_CONFIG)) {
         server_cmd("exec %s", LOCAL_CONFIG);
+        set_task(LOCAL_CONFIG_REAPPLY_DELAY_SECONDS, "reapplyLocalConfig", TASK_LOCAL_CONFIG);
     }
     server_exec();
 
@@ -100,6 +106,11 @@ public plugin_cfg()
         gWantedBotQuota = get_pcvar_num(gBotQuotaCvar);
         set_task(BOT_QUOTA_REAPPLY_INTERVAL_SECONDS, "reapplyBotQuota", TASK_BOT_QUOTA, _, _, "a", BOT_QUOTA_REAPPLY_COUNT);
     }
+}
+
+public reapplyLocalConfig()
+{
+    server_cmd("exec %s", LOCAL_CONFIG);
 }
 
 public reapplyBotQuota()
