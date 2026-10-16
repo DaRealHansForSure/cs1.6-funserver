@@ -98,6 +98,7 @@ Custom fun plugins (source code included, compiled during installation):
   - fun_menu       the Fun menu (/fun): modes, maps and admin toys on number keys
   - fun_rounds     surprise fun rounds in Classic (knives, AWP, low gravity ...)
   - fun_deathrun   the Deathrun mode (one trapper, everybody runs)
+  - fun_spawns     random spawns all over the map in GunGame and Deathmatch
 
 Also enabled: miscstats (announcements like "Headshot", "Monster Kill",
 "Humiliation") and statsx (/rank, /top15).
@@ -120,6 +121,11 @@ Admins switch immediately with /fun -> Switch mode, or in the console:
                 the round time, they win.
   Deathmatch    Free-for-all, instant respawn, random weapon, buy anywhere,
                 Hook is on.
+                GunGame and Deathmatch spawn players at random spots all
+                over the map. The server learns those spots from where
+                players and bots walk (addons\amxmodx\data\fun_spawns\),
+                so a new map starts with the spawns of both teams and gets
+                more spread out within a few minutes of play.
   Deathrun      One player sets off the traps, everybody else runs the
                 course. Details below.
 
