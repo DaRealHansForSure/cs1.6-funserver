@@ -21,7 +21,7 @@
                 <ColumnDefinition Width="60" />
                 <ColumnDefinition Width="64" />
                 <ColumnDefinition Width="52" />
-                <ColumnDefinition Width="318" />
+                <ColumnDefinition Width="372" />
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="Type" Style="{StaticResource SectionTitle}" Margin="0" />
             <TextBlock Grid.Column="1" Text="Name" Style="{StaticResource SectionTitle}" Margin="0" />
@@ -43,7 +43,7 @@
                                     <ColumnDefinition Width="60" />
                                     <ColumnDefinition Width="64" />
                                     <ColumnDefinition Width="52" />
-                                    <ColumnDefinition Width="318" />
+                                    <ColumnDefinition Width="372" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" VerticalAlignment="Center">
                                     <TextBlock.Style>
@@ -66,6 +66,8 @@
                                 <StackPanel Grid.Column="5" Orientation="Horizontal" HorizontalAlignment="Right">
                                     <Button Content="Glow" Padding="6,1" Margin="2,0,0,0"
                                             Command="{Binding DataContext.GlowCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                    <Button Content="Unglow" Padding="6,1" Margin="2,0,0,0"
+                                            Command="{Binding DataContext.UnglowCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     <Button Content="Rocket" Padding="6,1" Margin="2,0,0,0"
                                             Command="{Binding DataContext.RocketCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
                                     <Button Content="God" Padding="6,1" Margin="2,0,0,0" ToolTip="Godmode on"

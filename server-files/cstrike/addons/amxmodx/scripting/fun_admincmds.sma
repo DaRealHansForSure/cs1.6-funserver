@@ -1,6 +1,6 @@
 // Fun Admin Commands - the classic admin toys from the old fun servers.
 //
-//   amx_glow <target> <red|green|blue|yellow|pink|white|off>
+//   amx_glow <target> <red|green|blue|yellow|pink|white|off>  stays until off
 //   amx_godmode <target> <0|1>
 //   amx_noclip <target> <0|1>
 //   amx_rocket <target>        shoots the player into the sky, then boom
@@ -22,11 +22,17 @@
 #define PLUGIN_AUTHOR "LAN"
 
 #define TASK_ROCKET_EXPLODE 8100
+#define TASK_REAPPLY_GLOW 8200
 
 const FUN_ADMIN_FLAG = ADMIN_SLAY;
 const Float:ROCKET_LAUNCH_SPEED = 1100.0;
 const Float:ROCKET_FLIGHT_SECONDS = 1.6;
 const GLOW_THICKNESS = 25;
+const NO_GLOW = -1;
+
+// fun_rounds resets every player's look 0.2 s after spawn (a ghost round must
+// not carry over), so a kept glow goes back on a moment after that.
+const Float:GLOW_REAPPLY_DELAY_SECONDS = 0.4;
 
 // Beam and explosion sizes use the engine's own units.
 const TRAIL_LIFE_TENTHS = 10;
@@ -60,6 +66,9 @@ new gTrailSprite;
 new gExplosionSprite;
 new Float:gSpeedFactor[MAX_PLAYERS + 1];
 
+// A glow stays on a player across rounds and deaths until "off" or the next map.
+new gGlowColor[MAX_PLAYERS + 1] = {NO_GLOW, ...};
+
 public plugin_precache()
 {
     precache_sound(ROCKET_LAUNCH_SOUND);
@@ -84,17 +93,38 @@ public plugin_init()
 public client_putinserver(playerId)
 {
     gSpeedFactor[playerId] = 1.0;
+    gGlowColor[playerId] = NO_GLOW;
 }
 
 public client_disconnected(playerId)
 {
     remove_task(TASK_ROCKET_EXPLODE + playerId);
+    remove_task(TASK_REAPPLY_GLOW + playerId);
+    gGlowColor[playerId] = NO_GLOW;
 }
 
 public onPlayerSpawned(playerId)
 {
     // Speed changes are a joke for one life, not a permanent buff.
     gSpeedFactor[playerId] = 1.0;
+
+    if (gGlowColor[playerId] != NO_GLOW) {
+        remove_task(TASK_REAPPLY_GLOW + playerId);
+        set_task(GLOW_REAPPLY_DELAY_SECONDS, "reapplyGlow", TASK_REAPPLY_GLOW + playerId);
+    }
+}
+
+public reapplyGlow(taskId)
+{
+    new playerId = taskId - TASK_REAPPLY_GLOW;
+    if (is_user_alive(playerId) && gGlowColor[playerId] != NO_GLOW) {
+        applyGlow(playerId, gGlowColor[playerId]);
+    }
+}
+
+applyGlow(playerId, colorIndex)
+{
+    set_user_rendering(playerId, kRenderFxGlowShell, GLOW_COLOR_VALUES[colorIndex][0], GLOW_COLOR_VALUES[colorIndex][1], GLOW_COLOR_VALUES[colorIndex][2], kRenderNormal, GLOW_THICKNESS);
 }
 
 public onResetMaxSpeed(playerId)
@@ -129,9 +159,11 @@ public cmdGlow(adminId, level, commandId)
 
     for (new i = 0; i < targetCount; i++) {
         if (isTurningOff) {
+            gGlowColor[targets[i]] = NO_GLOW;
             set_user_rendering(targets[i]);
         } else {
-            set_user_rendering(targets[i], kRenderFxGlowShell, GLOW_COLOR_VALUES[colorIndex][0], GLOW_COLOR_VALUES[colorIndex][1], GLOW_COLOR_VALUES[colorIndex][2], kRenderNormal, GLOW_THICKNESS);
+            gGlowColor[targets[i]] = colorIndex;
+            applyGlow(targets[i], colorIndex);
         }
     }
 

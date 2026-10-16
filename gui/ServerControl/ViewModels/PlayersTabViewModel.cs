@@ -51,6 +51,9 @@ public sealed partial class PlayersTabViewModel(ServerConnection connection) : T
     private Task Glow(PlayerEntry player) => RunOnPlayer($"amx_glow #{player.UserId} green");
 
     [RelayCommand]
+    private Task Unglow(PlayerEntry player) => RunOnPlayer($"amx_glow #{player.UserId} off");
+
+    [RelayCommand]
     private Task Rocket(PlayerEntry player) => RunOnPlayer($"amx_rocket #{player.UserId}");
 
     [RelayCommand]

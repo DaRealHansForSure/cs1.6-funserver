@@ -239,6 +239,7 @@ More admins go in  server\cstrike\addons\amxmodx\configs\users.ini
 Fun commands (target = name, @T, @CT or @ALL):
   amx_rocket <target>
   amx_glow <target> <color>  (red, green, blue, yellow, pink, white, off)
+                             the glow stays across rounds until 'off'
   amx_godmode <target> 1
   amx_noclip <target> 1
   amx_speed <target> <factor>
