@@ -18,6 +18,13 @@
 
 #define TASK_VOTE_END 4100
 #define TASK_MAP_CHANGE 4200
+#define TASK_BOT_QUOTA 4300
+
+// YaPB puts the previous map's yb_quota back a moment after the map started
+// (yb_ignore_cvars_on_changelevel), so the value from the configs is applied
+// again a few times after that.
+const Float:BOT_QUOTA_REAPPLY_INTERVAL_SECONDS = 2.0;
+const BOT_QUOTA_REAPPLY_COUNT = 3;
 
 const MODE_COUNT = 5;
 const Float:VOTE_DURATION_SECONDS = 15.0;
@@ -48,6 +55,8 @@ new Float:gNextVoteAllowedAt;
 new gVoteMenu;
 new gVoteCounts[MODE_COUNT];
 new bool:gHasVoted[MAX_PLAYERS + 1];
+new gBotQuotaCvar;
+new gWantedBotQuota;
 
 public plugin_init()
 {
@@ -77,6 +86,22 @@ public plugin_cfg()
     server_exec();
 
     log_amx("Active mode: %s", gActiveMode);
+
+    gBotQuotaCvar = get_cvar_pointer("yb_quota");
+    if (gBotQuotaCvar) {
+        gWantedBotQuota = get_pcvar_num(gBotQuotaCvar);
+        set_task(BOT_QUOTA_REAPPLY_INTERVAL_SECONDS, "reapplyBotQuota", TASK_BOT_QUOTA, _, _, "a", BOT_QUOTA_REAPPLY_COUNT);
+    }
+}
+
+public reapplyBotQuota()
+{
+    if (get_pcvar_num(gBotQuotaCvar) == gWantedBotQuota) {
+        return;
+    }
+
+    log_amx("yb_quota was %d, setting it back to %d from the configs", get_pcvar_num(gBotQuotaCvar), gWantedBotQuota);
+    set_pcvar_num(gBotQuotaCvar, gWantedBotQuota);
 }
 
 /**
