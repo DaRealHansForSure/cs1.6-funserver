@@ -1,0 +1,2 @@
+Put your own maps here: .bsp files or whole .zip/.rar/.7z archives.
+Then run 3_UPDATE_MAPS.bat.

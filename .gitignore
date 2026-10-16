@@ -1,0 +1,13 @@
+# Created by the installer at runtime. server\ also holds the admin
+# password in cstrike\addons\amxmodx\configs\users.ini.
+server/
+tools/steamcmd/
+tools/downloads/
+tools/work/
+
+# Maps the user drops in themselves, only the hint file belongs to the package.
+custom-maps/*
+!custom-maps/PUT_MAPS_HERE.txt
+
+
+*.mdmp
