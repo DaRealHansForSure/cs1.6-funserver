@@ -44,6 +44,37 @@ $Components = @{
     YapbBots   = 'https://github.com/yapb/yapb/releases/download/4.4.957/yapb-4.4.957-windows.zip'
 }
 
+# Quake style announcer sounds for the stock miscstats plugin, from two
+# GameBanana packs (both 22 kHz mono, which the HL1 engine plays reliably).
+# Blackshot: "Blackshot Killstreak Quakesound!" by Apicvector (Sound 24481).
+# UtRecreation: "Kill sounds pack (UT recreation)" by Mike Isakov
+# (Sound 90672, CC BY-NC-ND 4.0, renaming allowed by its readme).
+$QuakeSoundPacks = @{
+    Blackshot    = @{ Url = 'https://gamebanana.com/dl/179793'; FileName = 'sounds\blackshot_killstreak_quakesounds.rar'; Folder = 'Blackshot_Killstreak_Quakesounds\Quakesounds' }
+    UtRecreation = @{ Url = 'https://gamebanana.com/dl/1738096'; FileName = 'sounds\kill_sounds_pack_ut_recreation.rar'; Folder = 'Kill sounds pack (UT recreation)\22khz 16bit mono' }
+}
+
+# miscstats file name (under cstrike\sound) -> pack and file in that pack.
+# Neither pack has "one and only", "may the force" or a grenade line, so
+# those use the closest fitting announcements.
+$QuakeSoundMapping = [ordered]@{
+    'misc\firstblood.wav'   = @('Blackshot', 'firstblood.wav')
+    'misc\headshot.wav'     = @('Blackshot', 'headshot.wav')
+    'misc\doublekill.wav'   = @('Blackshot', 'doublekill.wav')
+    'misc\multikill.wav'    = @('Blackshot', 'multikill.wav')
+    'misc\ultrakill.wav'    = @('Blackshot', 'ultrakill.wav')
+    'misc\killingspree.wav' = @('Blackshot', 'killingspree.wav')
+    'misc\rampage.wav'      = @('Blackshot', 'rampage.wav')
+    'misc\unstoppable.wav'  = @('Blackshot', 'unstoppable.wav')
+    'misc\prepare.wav'      = @('Blackshot', 'prepare.wav')
+    'misc\humiliation.wav'  = @('Blackshot', 'knife.wav')
+    'misc\oneandonly.wav'   = @('Blackshot', 'holyshit.wav')
+    'misc\monsterkill.wav'  = @('UtRecreation', 'MonsterKill.wav')
+    'misc\godlike.wav'      = @('UtRecreation', 'Godlike.wav')
+    'misc\maytheforce.wav'  = @('UtRecreation', 'WickedSick.wav')
+    'djeyl\grenade.wav'     = @('UtRecreation', 'Ownage.wav')
+}
+
 # Map files we copy out of downloaded archives. Anything else (exe, dll,
 # readme files) stays in the archive.
 $MapContentExtensions = @('.bsp', '.wad', '.res', '.txt', '.nav', '.wav', '.mp3', '.mdl', '.spr', '.tga', '.bmp')
@@ -455,16 +486,27 @@ function Set-AmxPluginList {
     $content = $content -replace '^;miscstats\.amxx', 'miscstats.amxx'
     Set-Content -Path $pluginsIni -Value $content -Encoding Ascii
 
-    Add-BlockOnce -FilePath $pluginsIni -Lines @(
-        $FunPluginsMarker,
+    $funPlugins = @(
         'fun_modes.amxx',
         'fun_hook.amxx',
         'fun_grab.amxx',
         'fun_parachute.amxx',
         'fun_admincmds.amxx',
         'fun_gungame.amxx',
-        'fun_zombie.amxx'
+        'fun_zombie.amxx',
+        'fun_menu.amxx',
+        'fun_rounds.amxx',
+        'fun_deathrun.amxx'
     )
+    Add-BlockOnce -FilePath $pluginsIni -Lines (@($FunPluginsMarker) + $funPlugins)
+
+    # Plugins added in a later version of the package must reach existing
+    # installs too, where the block above is already present.
+    $registeredLines = @(Get-Content $pluginsIni | ForEach-Object { $_.Trim() })
+    $missingPlugins = @($funPlugins | Where-Object { $_ -notin $registeredLines })
+    if ($missingPlugins.Count -gt 0) {
+        Add-Content -Path $pluginsIni -Value $missingPlugins -Encoding Ascii
+    }
 }
 
 function Set-AdminAccount {
@@ -521,6 +563,58 @@ function Install-MapPack {
     if ($failedMaps.Count -gt 0) {
         Write-Problem "Not installed: $($failedMaps -join ', '). Try again later with 3_UPDATE_MAPS.bat."
     }
+}
+
+<#
+.SYNOPSIS
+Downloads the announcer sound packs and copies the files miscstats plays
+into cstrike\sound under the names it expects.
+
+.DESCRIPTION
+Files that already exist are kept, so sounds the owner put there by hand win.
+A failure here only costs the sounds, never the install.
+#>
+function Install-QuakeSounds {
+    Write-Step 'Quake announcer sounds'
+
+    $extractedPacks = @{}
+    foreach ($packName in $QuakeSoundPacks.Keys) {
+        $pack = $QuakeSoundPacks[$packName]
+        try {
+            $archive = Get-CachedDownload -Url $pack.Url -FileName $pack.FileName
+            $extracted = Expand-Download $archive
+            $extractedPacks[$packName] = Join-Path $extracted $pack.Folder
+        } catch {
+            Write-Problem "Sound pack $packName failed: $($_.Exception.Message)"
+        }
+    }
+
+    $installedCount = 0
+    foreach ($targetName in $QuakeSoundMapping.Keys) {
+        $packName = $QuakeSoundMapping[$targetName][0]
+        $sourceName = $QuakeSoundMapping[$targetName][1]
+        if (-not $extractedPacks.ContainsKey($packName)) {
+            continue
+        }
+
+        $targetPath = Join-Path $CstrikeDir "sound\$targetName"
+        if (Test-Path $targetPath) {
+            $installedCount++
+            continue
+        }
+
+        $sourcePath = Join-Path $extractedPacks[$packName] $sourceName
+        if (-not (Test-Path $sourcePath)) {
+            Write-Problem "$sourceName is missing in sound pack $packName."
+            continue
+        }
+
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $targetPath) | Out-Null
+        Copy-Item -Path $sourcePath -Destination $targetPath
+        $installedCount++
+    }
+
+    Write-Note "$installedCount of $($QuakeSoundMapping.Count) sounds in place"
 }
 
 function Install-OwnMaps {
@@ -661,7 +755,10 @@ function Get-MapModes {
     param([string]$MapName)
 
     $isZombieMap = $MapName -like 'zm_*'
-    $isSmallFunMap = $MapName -match '^(fy_|aim_|awp_|gg_|35_?hp|he_|ka_|fun_)' -or $MapName -like '*rats*' -or $MapName -like 'de_dust2_2x2*'
+    # Knife and grenade maps force their own weapons, which fights GunGame
+    # levels and Deathmatch spawn weapons, so they only run in classic.
+    $isSpecialWeaponMap = $MapName -match '^(35_?hp|he_|ka_)'
+    $isSmallFunMap = $MapName -match '^(fy_|aim_|awp_|gg_|fun_)' -or $MapName -like '*rats*' -or $MapName -like 'de_dust2_2x2*'
     $isGoodDeathmatchMap = $MapName -in @('de_dust2', 'de_inferno', 'de_nuke', 'de_aztec', 'de_train', 'cs_assault', 'cs_italy', 'cs_office', 'cs_mansion')
     $isGoodZombieMap = $MapName -in @('de_dust2', 'de_inferno', 'de_nuke', 'de_aztec', 'de_train', 'de_survivor', 'de_vertigo')
 
@@ -671,7 +768,22 @@ function Get-MapModes {
         return $modes
     }
 
+    # Deathrun maps only make sense with the one-trapper rules of their mode.
+    if ($MapName -like 'deathrun_*') {
+        $modes += 'deathrun'
+        return $modes
+    }
+
     $modes += 'classic'
+    if ($isSpecialWeaponMap) {
+        return $modes
+    }
+
+    # Surf with instant respawn and random weapons is a classic of its own.
+    if ($MapName -like 'surf_*') {
+        $modes += 'deathmatch'
+        return $modes
+    }
     if ($isSmallFunMap -or $MapName -in @('de_dust2', 'cs_assault', 'cs_mansion')) {
         $modes += 'gungame'
     }
@@ -697,6 +809,7 @@ function Update-MapCycles {
         gungame    = New-Object System.Collections.Generic.List[string]
         deathmatch = New-Object System.Collections.Generic.List[string]
         zombie     = New-Object System.Collections.Generic.List[string]
+        deathrun   = New-Object System.Collections.Generic.List[string]
     }
 
     # Fun maps first, so a fresh server starts on something fun instead of
@@ -752,6 +865,7 @@ function Invoke-ServerInstall {
     Install-Yapb
     Set-MetamodPlugins
     Install-FunFiles
+    Install-QuakeSounds
     Install-MapPack
     Install-OwnMaps
     Update-MapCycles
@@ -764,6 +878,7 @@ function Invoke-MapsInstall {
     }
 
     New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
+    Install-QuakeSounds
     Install-MapPack
     Install-OwnMaps
     Update-MapCycles

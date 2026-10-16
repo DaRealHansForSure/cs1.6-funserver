@@ -1,7 +1,7 @@
 // Fun Modes - switches the server between the four LAN game modes.
 //
 // Players start a vote with "/mode" in chat, admins can switch directly
-// with "amx_mode <name>". On a switch the plugin stores the new mode,
+// with "amx_funmode <name>". On a switch the plugin stores the new mode,
 // points mapcyclefile at the mode's own map list and changes to a random map
 // from it. On every map start it executes modes/base.cfg followed by
 // modes/<mode>.cfg, so each mode always starts from the same clean settings.
@@ -18,8 +18,16 @@
 
 #define TASK_VOTE_END 4100
 #define TASK_MAP_CHANGE 4200
+#define TASK_BOT_QUOTA 4300
+#define LOCAL_CONFIG "local.cfg"
 
-const MODE_COUNT = 4;
+// YaPB puts the previous map's yb_quota back a moment after the map started
+// (yb_ignore_cvars_on_changelevel), so the value from the configs is applied
+// again a few times after that.
+const Float:BOT_QUOTA_REAPPLY_INTERVAL_SECONDS = 2.0;
+const BOT_QUOTA_REAPPLY_COUNT = 3;
+
+const MODE_COUNT = 5;
 const Float:VOTE_DURATION_SECONDS = 15.0;
 const Float:VOTE_COOLDOWN_SECONDS = 120.0;
 const Float:MAP_CHANGE_DELAY_SECONDS = 5.0;
@@ -29,14 +37,16 @@ new const MODE_IDS[MODE_COUNT][] = {
     "classic",
     "gungame",
     "zombie",
-    "deathmatch"
+    "deathmatch",
+    "deathrun"
 };
 
 new const MODE_TITLES[MODE_COUNT][] = {
     "Classic Fun (Hook, Grab, Parachute)",
     "GunGame",
     "Zombie Infection",
-    "Deathmatch"
+    "Deathmatch",
+    "Deathrun"
 };
 
 new gActiveMode[FUN_MODE_LENGTH];
@@ -46,6 +56,8 @@ new Float:gNextVoteAllowedAt;
 new gVoteMenu;
 new gVoteCounts[MODE_COUNT];
 new bool:gHasVoted[MAX_PLAYERS + 1];
+new gBotQuotaCvar;
+new gWantedBotQuota;
 
 public plugin_init()
 {
@@ -53,7 +65,7 @@ public plugin_init()
 
     register_clcmd("say /mode", "cmdStartVote");
     register_clcmd("say_team /mode", "cmdStartVote");
-    register_concmd("amx_mode", "cmdSetMode", ADMIN_MAP, "<classic|gungame|zombie|deathmatch> - switches the mode right away");
+    register_concmd("amx_funmode", "cmdSetMode", ADMIN_MAP, "<classic|gungame|zombie|deathmatch|deathrun> - switches the mode right away");
 
     get_fun_mode(gActiveMode, charsmax(gActiveMode));
 }
@@ -64,9 +76,60 @@ public plugin_cfg()
     // the mode file only has to list what makes that mode special.
     server_cmd("exec modes/base.cfg");
     server_cmd("exec modes/%s.cfg", gActiveMode);
+
+    // Some map types need physics of their own in every mode, surf for
+    // example needs a high sv_airaccelerate. They get modes/maps/<prefix>.cfg.
+    new mapTypeConfig[64];
+    if (findMapTypeConfig(mapTypeConfig, charsmax(mapTypeConfig))) {
+        server_cmd("exec %s", mapTypeConfig);
+        log_amx("Map type settings: %s", mapTypeConfig);
+    }
+
+    // local.cfg holds what the host set in the Server Control window (server
+    // name, RCON password ...). It lives only in server\cstrike, the installer
+    // never overwrites it, and it runs last so it wins over the mode defaults.
+    if (file_exists(LOCAL_CONFIG)) {
+        server_cmd("exec %s", LOCAL_CONFIG);
+    }
     server_exec();
 
     log_amx("Active mode: %s", gActiveMode);
+
+    gBotQuotaCvar = get_cvar_pointer("yb_quota");
+    if (gBotQuotaCvar) {
+        gWantedBotQuota = get_pcvar_num(gBotQuotaCvar);
+        set_task(BOT_QUOTA_REAPPLY_INTERVAL_SECONDS, "reapplyBotQuota", TASK_BOT_QUOTA, _, _, "a", BOT_QUOTA_REAPPLY_COUNT);
+    }
+}
+
+public reapplyBotQuota()
+{
+    if (get_pcvar_num(gBotQuotaCvar) == gWantedBotQuota) {
+        return;
+    }
+
+    log_amx("yb_quota was %d, setting it back to %d from the configs", get_pcvar_num(gBotQuotaCvar), gWantedBotQuota);
+    set_pcvar_num(gBotQuotaCvar, gWantedBotQuota);
+}
+
+/**
+ * Builds modes/maps/<prefix>.cfg from the part of the map name before the
+ * first underscore and returns true when that file exists.
+ */
+bool:findMapTypeConfig(configPath[], length)
+{
+    new mapName[MAX_MAPNAME_LENGTH];
+    get_mapname(mapName, charsmax(mapName));
+
+    new underscorePosition = contain(mapName, "_");
+    if (underscorePosition <= 0) {
+        return false;
+    }
+    mapName[underscorePosition] = EOS;
+    strtolower(mapName);
+
+    formatex(configPath, length, "modes/maps/%s.cfg", mapName);
+    return bool:file_exists(configPath);
 }
 
 public client_putinserver(playerId)
@@ -124,7 +187,7 @@ public cmdSetMode(playerId, level, commandId)
 
     new modeIndex = findModeIndex(requestedMode);
     if (!equal(MODE_IDS[modeIndex], requestedMode)) {
-        console_print(playerId, "Unknown mode. Possible: classic, gungame, zombie, deathmatch");
+        console_print(playerId, "Unknown mode. Possible: classic, gungame, zombie, deathmatch, deathrun");
         return PLUGIN_HANDLED;
     }
 
