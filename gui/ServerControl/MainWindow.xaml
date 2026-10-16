@@ -1,0 +1,138 @@
+<Window x:Class="ServerControl.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:ServerControl.ViewModels"
+        xmlns:views="clr-namespace:ServerControl.Views"
+        Title="CS 1.6 LAN Server Control" Width="1000" Height="720" MinWidth="800" MinHeight="600"
+        Background="{StaticResource WindowBrush}" FontFamily="{StaticResource UiFont}" FontSize="12"
+        TextOptions.TextFormattingMode="Display" WindowStartupLocation="CenterScreen">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type vm:ServerTabViewModel}">
+            <views:ServerTabView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MapsTabViewModel}">
+            <views:MapsTabView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:PlayersTabViewModel}">
+            <views:PlayersTabView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:FunTabViewModel}">
+            <views:FunTabView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StatsTabViewModel}">
+            <views:StatsTabView />
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsTabViewModel}">
+            <views:SettingsTabView />
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="104" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header: server name, state, address, start and stop -->
+        <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,10">
+            <StackPanel DockPanel.Dock="Left" VerticalAlignment="Center">
+                <TextBlock Text="{Binding Connection.ServerName}" FontSize="16" FontWeight="Bold" />
+                <TextBlock Style="{StaticResource MutedText}" Margin="0,2,0,0">
+                    <Run Text="{Binding Connection.StatusText, Mode=OneWay}" />
+                </TextBlock>
+            </StackPanel>
+            <TextBlock DockPanel.Dock="Left" FontWeight="Bold" VerticalAlignment="Center" Margin="16,0,0,0">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Text" Value="[ stopped ]" />
+                        <Setter Property="Foreground" Value="{StaticResource StoppedBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Connection.IsRunning}" Value="True">
+                                <Setter Property="Text" Value="[ running ]" />
+                                <Setter Property="Foreground" Value="{StaticResource RunningBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+
+            <Button DockPanel.Dock="Right" Command="{Binding StartOrStopCommand}" Margin="6,0,0,0" MinWidth="90">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource AccentButton}">
+                        <Setter Property="Content" Value="Start" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Connection.IsRunning}" Value="True">
+                                <Setter Property="Content" Value="Stop" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsStopping}" Value="True">
+                                <Setter Property="Content" Value="Stopping..." />
+                                <Setter Property="IsEnabled" Value="False" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+            <Button DockPanel.Dock="Right" Command="{Binding RestartMapCommand}" Content="Restart map" Margin="6,0,0,0"
+                    IsEnabled="{Binding Connection.IsRunning}" />
+            <Button DockPanel.Dock="Right" Command="{Binding ServerTab.CopyConnectCommandCommand}" Content="Copy" ToolTip="Copy the connect command" Margin="6,0,0,0" />
+            <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" FontFamily="{StaticResource MonoFont}" FontSize="11">
+                <Run Text="connect " Foreground="{StaticResource MutedBrush}" /><Run Text="{Binding Connection.Address, Mode=OneWay}" />
+            </TextBlock>
+        </DockPanel>
+
+        <!-- Tabs -->
+        <ListBox Grid.Row="1" ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}" Style="{StaticResource PlainList}"
+                 ItemContainerStyle="{StaticResource TabItem}" Panel.ZIndex="1">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" />
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding Title}" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" />
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <!-- Tab content in a raised panel -->
+        <Border Grid.Row="2" Style="{StaticResource RaisedPanel}">
+            <Border Style="{StaticResource RaisedPanelShade}" Padding="14">
+                <ContentControl Content="{Binding SelectedTab}" />
+            </Border>
+        </Border>
+
+        <!-- Console -->
+        <TextBlock Grid.Row="3" Text="Console" Style="{StaticResource SectionTitle}" Margin="0,10,0,4" />
+        <Border Grid.Row="4" Style="{StaticResource SunkenPanel}">
+            <Border Style="{StaticResource SunkenPanelShade}" Padding="6,4">
+                <ListBox x:Name="ConsoleList" ItemsSource="{Binding Connection.ConsoleLines}" Style="{StaticResource PlainList}"
+                         ItemContainerStyle="{StaticResource BareItem}" FontFamily="{StaticResource MonoFont}" FontSize="11">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </Border>
+        <DockPanel Grid.Row="5" Margin="0,6,0,0">
+            <Button DockPanel.Dock="Right" Content="Submit" Command="{Binding SendConsoleCommand}" Margin="6,0,0,0" />
+            <TextBox Text="{Binding ConsoleInput, UpdateSourceTrigger=PropertyChanged}" FontFamily="{StaticResource MonoFont}"
+                     ToolTip="Any server console command, for example amx_funround deagle">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding SendConsoleCommand}" />
+                </TextBox.InputBindings>
+            </TextBox>
+        </DockPanel>
+    </Grid>
+</Window>

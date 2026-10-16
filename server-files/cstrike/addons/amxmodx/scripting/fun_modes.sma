@@ -1,4 +1,4 @@
-// Fun Modes - switches the server between the four LAN game modes.
+// Fun Modes - switches the server between the five LAN game modes.
 //
 // Players start a vote with "/mode" in chat, admins can switch directly
 // with "amx_funmode <name>". On a switch the plugin stores the new mode,
@@ -20,12 +20,27 @@
 #define TASK_MAP_CHANGE 4200
 #define TASK_BOT_QUOTA 4300
 #define LOCAL_CONFIG "local.cfg"
+#define TASK_LOCAL_CONFIG 4400
 
-// YaPB puts the previous map's yb_quota back a moment after the map started
-// (yb_ignore_cvars_on_changelevel), so the value from the configs is applied
-// again a few times after that.
-const Float:BOT_QUOTA_REAPPLY_INTERVAL_SECONDS = 2.0;
-const BOT_QUOTA_REAPPLY_COUNT = 3;
+const Float:LOCAL_CONFIG_REAPPLY_DELAY_SECONDS = 1.0;
+
+#define BOTS_LOCAL_CONFIG "local_bots.cfg"
+
+// YaPB runs yapb.cfg again a moment after every map start and puts the
+// previous map's yb_quota back (yb_ignore_cvars_on_changelevel), so the bot
+// values from our configs are applied again a few times after that.
+const Float:BOT_SETTINGS_REAPPLY_INTERVAL_SECONDS = 2.0;
+const BOT_SETTINGS_REAPPLY_COUNT = 3;
+const BOT_SETTING_COUNT = 5;
+const BOT_VALUE_LENGTH = 16;
+
+new const BOT_SETTING_CVARS[BOT_SETTING_COUNT][] = {
+    "yb_quota",
+    "yb_difficulty",
+    "yb_chat",
+    "yb_chat_percent",
+    "yb_radio_mode"
+};
 
 const MODE_COUNT = 5;
 const Float:VOTE_DURATION_SECONDS = 15.0;
@@ -56,8 +71,8 @@ new Float:gNextVoteAllowedAt;
 new gVoteMenu;
 new gVoteCounts[MODE_COUNT];
 new bool:gHasVoted[MAX_PLAYERS + 1];
-new gBotQuotaCvar;
-new gWantedBotQuota;
+new gBotSettingPointers[BOT_SETTING_COUNT];
+new gWantedBotValues[BOT_SETTING_COUNT][BOT_VALUE_LENGTH];
 
 public plugin_init()
 {
@@ -77,58 +92,108 @@ public plugin_cfg()
     server_cmd("exec modes/base.cfg");
     server_cmd("exec modes/%s.cfg", gActiveMode);
 
-    // Some map types need physics of their own in every mode, surf for
-    // example needs a high sv_airaccelerate. They get modes/maps/<prefix>.cfg.
+    // What the host set in the Server Control window for the bots: first for
+    // every mode (difficulty, chat ...), then for this mode only (bot count).
+    // Both run before the map configs on purpose, so a map like surf or
+    // de_rats can still overrule them.
+    execIfExists(BOTS_LOCAL_CONFIG);
+    new modeLocalConfig[64];
+    formatex(modeLocalConfig, charsmax(modeLocalConfig), "local_%s.cfg", gActiveMode);
+    execIfExists(modeLocalConfig);
+
+    // Some map types need settings of their own in every mode, surf for
+    // example needs a high sv_airaccelerate: modes/maps/<prefix>.cfg. Single
+    // maps can go further with modes/maps/<mapname>.cfg, which runs after it.
+    new mapName[MAX_MAPNAME_LENGTH];
+    get_mapname(mapName, charsmax(mapName));
+    strtolower(mapName);
+
     new mapTypeConfig[64];
-    if (findMapTypeConfig(mapTypeConfig, charsmax(mapTypeConfig))) {
+    if (findMapTypeConfig(mapName, mapTypeConfig, charsmax(mapTypeConfig))) {
         server_cmd("exec %s", mapTypeConfig);
         log_amx("Map type settings: %s", mapTypeConfig);
+    }
+
+    new mapConfig[64];
+    formatex(mapConfig, charsmax(mapConfig), "modes/maps/%s.cfg", mapName);
+    if (file_exists(mapConfig) && !equal(mapConfig, mapTypeConfig)) {
+        server_cmd("exec %s", mapConfig);
+        log_amx("Map settings: %s", mapConfig);
     }
 
     // local.cfg holds what the host set in the Server Control window (server
     // name, RCON password ...). It lives only in server\cstrike, the installer
     // never overwrites it, and it runs last so it wins over the mode defaults.
+    // On the first map the engine runs server.cfg after this, which would
+    // reset hostname and friends, so local.cfg runs once more a second later.
     if (file_exists(LOCAL_CONFIG)) {
         server_cmd("exec %s", LOCAL_CONFIG);
+        set_task(LOCAL_CONFIG_REAPPLY_DELAY_SECONDS, "reapplyLocalConfig", TASK_LOCAL_CONFIG);
     }
     server_exec();
 
     log_amx("Active mode: %s", gActiveMode);
 
-    gBotQuotaCvar = get_cvar_pointer("yb_quota");
-    if (gBotQuotaCvar) {
-        gWantedBotQuota = get_pcvar_num(gBotQuotaCvar);
-        set_task(BOT_QUOTA_REAPPLY_INTERVAL_SECONDS, "reapplyBotQuota", TASK_BOT_QUOTA, _, _, "a", BOT_QUOTA_REAPPLY_COUNT);
+    // Without YaPB the pointers stay 0 and nothing is re-applied.
+    new isYapbLoaded = false;
+    for (new i = 0; i < BOT_SETTING_COUNT; i++) {
+        gBotSettingPointers[i] = get_cvar_pointer(BOT_SETTING_CVARS[i]);
+        if (gBotSettingPointers[i]) {
+            get_pcvar_string(gBotSettingPointers[i], gWantedBotValues[i], BOT_VALUE_LENGTH - 1);
+            isYapbLoaded = true;
+        }
+    }
+    if (isYapbLoaded) {
+        set_task(BOT_SETTINGS_REAPPLY_INTERVAL_SECONDS, "reapplyBotSettings", TASK_BOT_QUOTA, _, _, "a", BOT_SETTINGS_REAPPLY_COUNT);
     }
 }
 
-public reapplyBotQuota()
+execIfExists(const configFile[])
 {
-    if (get_pcvar_num(gBotQuotaCvar) == gWantedBotQuota) {
-        return;
+    if (file_exists(configFile)) {
+        server_cmd("exec %s", configFile);
     }
+}
 
-    log_amx("yb_quota was %d, setting it back to %d from the configs", get_pcvar_num(gBotQuotaCvar), gWantedBotQuota);
-    set_pcvar_num(gBotQuotaCvar, gWantedBotQuota);
+public reapplyLocalConfig()
+{
+    server_cmd("exec %s", LOCAL_CONFIG);
+}
+
+public reapplyBotSettings()
+{
+    new currentValue[BOT_VALUE_LENGTH];
+    for (new i = 0; i < BOT_SETTING_COUNT; i++) {
+        if (!gBotSettingPointers[i]) {
+            continue;
+        }
+
+        get_pcvar_string(gBotSettingPointers[i], currentValue, charsmax(currentValue));
+        if (equal(currentValue, gWantedBotValues[i])) {
+            continue;
+        }
+
+        log_amx("%s was %s, setting it back to %s from the configs", BOT_SETTING_CVARS[i], currentValue, gWantedBotValues[i]);
+        set_pcvar_string(gBotSettingPointers[i], gWantedBotValues[i]);
+    }
 }
 
 /**
- * Builds modes/maps/<prefix>.cfg from the part of the map name before the
- * first underscore and returns true when that file exists.
+ * Builds modes/maps/<prefix>.cfg from the part of the (lower case) map name
+ * before the first underscore and returns true when that file exists.
  */
-bool:findMapTypeConfig(configPath[], length)
+bool:findMapTypeConfig(const mapName[], configPath[], length)
 {
-    new mapName[MAX_MAPNAME_LENGTH];
-    get_mapname(mapName, charsmax(mapName));
+    new prefix[MAX_MAPNAME_LENGTH];
+    copy(prefix, charsmax(prefix), mapName);
 
-    new underscorePosition = contain(mapName, "_");
+    new underscorePosition = contain(prefix, "_");
     if (underscorePosition <= 0) {
         return false;
     }
-    mapName[underscorePosition] = EOS;
-    strtolower(mapName);
+    prefix[underscorePosition] = EOS;
 
-    formatex(configPath, length, "modes/maps/%s.cfg", mapName);
+    formatex(configPath, length, "modes/maps/%s.cfg", prefix);
     return bool:file_exists(configPath);
 }
 

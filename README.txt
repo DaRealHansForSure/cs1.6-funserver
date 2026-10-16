@@ -29,6 +29,51 @@ for private networks (for hlds.exe and for PowerShell).
 Other players only need a normal CS 1.6 (Steam). Missing maps and sounds
 are downloaded quickly from the server automatically when they connect.
 
+Instead of step 3 you can also use the window: 4_SERVER_CONTROL.exe
+(see SERVER CONTROL WINDOW below).
+
+
+SERVER CONTROL WINDOW
+---------------------
+
+4_SERVER_CONTROL.exe controls the whole server with the mouse:
+  Server     pick the mode and map, then Start server; while it runs the
+             same button says Switch now and changes mode and map at
+             once. Start TV for a big screen (see below), LAN address
+  Maps       every installed map with a picture, filter by mode,
+             Play = change map now, First map = start the server on it
+  Players    who is on, bots +1 / -1 / off, glow, rocket, godmode,
+             noclip, slay, kick
+  Fun        force the next fun round, switch mode, restart round,
+             hook on/off, chat message to everybody
+  Stats      map time bar (played, left, next map), leaderboard of this map
+             or the last 12 hours (kills, deaths, K/D, knife, HE, best
+             weapon), and every map played tonight with how long it ran
+  Settings   server name, join password, max players, fun rounds,
+             hook speed, bots per mode (saved in server\cstrike\local.cfg
+             and local_<mode>.cfg)
+  Console    any server command at the bottom, with the answer
+
+It talks to the server over RCON with a random password that lives only
+in server\cstrike\local.cfg. A server started with 2_START_SERVER.bat
+works with the window too.
+
+TV for a big screen: Start TV on the Server tab starts an HLTV proxy. On
+the PC at the TV or projector start CS and type in the console
+  connect <server IP>:27020
+That PC watches as a spectator with the automatic camera, 10 seconds
+behind the game. The TV uses one player slot. Allow UDP 27020 in the
+firewall if Windows asks (1_INSTALL.bat as admin adds the rule).
+
+Map pictures: the installer downloads one screenshot per fun map from
+GameBanana into tools\previews\ (the ModId column of tools\maps.csv),
+stock maps show their radar image. For any other map put a <mapname>.jpg
+or .png into tools\previews\, the installer never replaces it.
+
+The exe is built from the source in gui\ with
+  powershell -ExecutionPolicy Bypass -File tools\build-gui.ps1
+which needs the .NET 10 SDK once (winget install Microsoft.DotNet.SDK.10).
+
 
 WHAT'S INCLUDED
 ---------------
@@ -53,6 +98,8 @@ Custom fun plugins (source code included, compiled during installation):
   - fun_menu       the Fun menu (/fun): modes, maps and admin toys on number keys
   - fun_rounds     surprise fun rounds in Classic (knives, AWP, low gravity ...)
   - fun_deathrun   the Deathrun mode (one trapper, everybody runs)
+  - fun_spawns     random spawns all over the map in GunGame and Deathmatch
+  - fun_streaks    kill streak rewards: glow, +50 HP, rocket jump
 
 Also enabled: miscstats (announcements like "Headshot", "Monster Kill",
 "Humiliation") and statsx (/rank, /top15).
@@ -75,6 +122,11 @@ Admins switch immediately with /fun -> Switch mode, or in the console:
                 the round time, they win.
   Deathmatch    Free-for-all, instant respawn, random weapon, buy anywhere,
                 Hook is on.
+                GunGame and Deathmatch spawn players at random spots all
+                over the map. The server learns those spots from where
+                players and bots walk (addons\amxmodx\data\fun_spawns\),
+                so a new map starts with the spawns of both teams and gets
+                more spread out within a few minutes of play.
   Deathrun      One player sets off the traps, everybody else runs the
                 course. Details below.
 
@@ -87,16 +139,23 @@ that round, announced at the round start:
   awp       AWP only                 deagle    one bullet, one shot kills,
   lowgrav   low gravity                        every kill gives a bullet
   speed     everybody runs fast      hewar     endless HE grenades
-                                     ghost     everybody almost invisible
+  juggernaut  one player (alone as T) gets  ghost     everybody almost invisible
+              1000 HP, armor and an M249,
+              everybody else hunts them
 Admins pick the next round with  amx_funround <name|random|off>
 Change how often:  fun_rounds_every 3   (off: fun_rounds_enabled 0)
+
+Kill streaks (every mode): 5 kills without dying give a short gold glow
+and +50 HP (up to 255), every 10 kills also a rocket jump and a message
+to everybody. Dying starts again at 0. Off: fun_streaks_enabled 0
 Not on knife, HE, deathrun and surf maps, those have their own rules.
 
 DEATHRUN
   How to start: pick 5) Deathrun in 2_START_SERVER.bat, vote for it with
   /mode, or as admin /fun -> Switch mode -> Deathrun.
   Maps: deathrun_temple, deathrun_dojo, deathrun_projetocs,
-  deathrun_forest, deathrun_crash_egypt (plus your own deathrun_ maps).
+  deathrun_forest, deathrun_crash_egypt, deathrun_cxx-inc, deathrun_death
+  (plus your own deathrun_ maps).
   How it plays:
     - Each round one player is the Terrorist. They stand at the trap
       buttons and press them (E) when the runners pass.
@@ -110,7 +169,7 @@ DEATHRUN
   server-files\cstrike\modes\deathrun.cfg.
 
 SURF
-  Maps: surf_ski_2, surf_water-run, surf_ninja. They run in Classic and
+  Maps: surf_ski_2, surf_water-run, surf_ninja, surf_green_delux2 (easy). They run in Classic and
   Deathmatch (with instant respawn and random weapons).
   How to surf: hold strafe (A or D) towards the slanted ramp and steer
   with the mouse, do not press W.
@@ -122,6 +181,44 @@ SURF
   server-files\cstrike\modes\maps\surf.cfg and is undone on the next map.
   The same works for any map type: modes\maps\<prefix>.cfg runs on every
   map whose name starts with <prefix>_ (e.g. kz.cfg for kz_ maps).
+  And for a single map: modes\maps\<mapname>.cfg (e.g. de_rats.cfg), which
+  runs after the map type file.
+
+
+BOTS (YaPB)
+-----------
+
+Set in the Server Control window, Settings tab, for every mode:
+  Skill            Newbie, Easy, Normal, Hard, Expert (yb_difficulty 0 to 4)
+  Radio and voice  Silent, Radio only, Radio and voice (yb_radio_mode)
+  Chat             on/off and how often a dead bot writes (yb_chat,
+                   yb_chat_percent)
+  Bots per mode    how many bots fill each mode (yb_quota)
+Without the window, put the same lines into server\cstrike\local_bots.cfg,
+for example  yb_difficulty "3"
+
+Map rules win over these: surf maps run without bots, the rats maps
+(de_rats, de_rats4, cs_rats2) with 4 bots on Hard, because bots handle the
+jumps onto chairs and shelves badly there. See server-files\cstrike\modes\
+maps\de_rats.cfg to change that.
+
+The chat lines are in server\cstrike\addons\yapb\conf\lang\en_chat.cfg,
+grouped in [KILLED] (%v = victim), [WELCOME], [DEADCHAT] and [REPLIES].
+
+Fixing bot routes on a map (graph editor):
+  Bots walk along a node graph per map, downloaded from the YaPB database
+  or built by YaPB itself. Where bots get stuck, you can fix it in game.
+  As admin, on the map, in the game console:
+    yb graph acquire_editor   take the editor rights on this server
+    yb graph on noclip        show the nodes and fly through walls
+    yb graphmenu              menu: add node, create paths, autowaypoint
+    yb graph add              add a node where you stand
+    yb graph delete nearest   remove the node next to you
+    yb graph check            look for errors
+    yb graph save             save to addons\yapb\data\graph\<map>.graph
+    yb graph off              back to normal
+  Tip: the rats maps need nodes on top of chairs and shelves, connected
+  with jump paths (in the path menu).
 
 
 BINDING KEYS (in the CS console, key ^)
@@ -159,6 +256,7 @@ More admins go in  server\cstrike\addons\amxmodx\configs\users.ini
 Fun commands (target = name, @T, @CT or @ALL):
   amx_rocket <target>
   amx_glow <target> <color>  (red, green, blue, yellow, pink, white, off)
+                             the glow stays across rounds until 'off'
   amx_godmode <target> 1
   amx_noclip <target> 1
   amx_speed <target> <factor>
