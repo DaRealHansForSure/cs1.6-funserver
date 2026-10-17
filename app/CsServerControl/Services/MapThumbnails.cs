@@ -7,16 +7,18 @@ namespace CsServerControl.Services;
 
 /// <summary>
 /// Small map pictures: the screenshot the installer downloaded into
-/// tools\previews, else the stock radar image from cstrike\overviews.
+/// tools\previews, else the stock radar image from cstrike\overviews, else
+/// the top-down view the Maps screen rendered into tools\previews\auto.
 /// </summary>
 public sealed class MapThumbnails {
     // WPF reads these without extra codecs; the radar .tga files are skipped.
     private static readonly string[] Extensions = [".jpg", ".jpeg", ".png", ".bmp"];
 
+    // Shared by every screen, so a picture rendered on the Maps screen shows
+    // up in the Server screen's list too once Forget dropped the old answer.
+    private static readonly ConcurrentDictionary<(int Width, string MapName), ImageSource?> Cache = new();
 
     private readonly PackagePaths _paths;
-    private readonly ConcurrentDictionary<string, ImageSource?> _cache = new(StringComparer.OrdinalIgnoreCase);
-
     private readonly int _decodeWidth;
 
     /// <summary>Small pictures for lists by default, a larger width for the details dialog.</summary>
@@ -26,11 +28,19 @@ public sealed class MapThumbnails {
     }
 
     public ImageSource? Get(string mapName) {
-        return _cache.GetOrAdd(mapName, Load);
+        return Cache.GetOrAdd((_decodeWidth, mapName.ToLowerInvariant()), key => Load(key.MapName));
+    }
+
+    /// <summary>After a new picture was saved: the next Get reads the files again.</summary>
+    public static void Forget(string mapName) {
+        string key = mapName.ToLowerInvariant();
+        foreach ((int Width, string MapName) cached in Cache.Keys.Where(cached => cached.MapName == key)) {
+            Cache.TryRemove(cached, out _);
+        }
     }
 
     private ImageSource? Load(string mapName) {
-        foreach (string folder in new[] { _paths.PreviewsDir, _paths.OverviewsDir }) {
+        foreach (string folder in new[] { _paths.PreviewsDir, _paths.OverviewsDir, _paths.GeneratedPreviewsDir }) {
             foreach (string extension in Extensions) {
                 string candidate = Path.Combine(folder, mapName + extension);
                 if (!File.Exists(candidate)) {

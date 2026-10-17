@@ -42,7 +42,8 @@
                 <ToggleButton Content="Reconnect bots" Style="{StaticResource CardToggle}" Margin="0,0,8,0"
                               IsChecked="{Binding IsReconnectPending, Mode=TwoWay}" IsEnabled="{Binding Connection.IsRunning}"
                               ToolTip="On Apply, all bots leave and join again, so a new difficulty applies to them" />
-                <Button Content="Apply" Style="{StaticResource PrimaryButton}" Command="{Binding ApplyCommand}" />
+                <Button Content="Apply" Style="{StaticResource PrimaryButton}" Command="{Binding ApplyCommand}"
+                        IsEnabled="{Binding IsDirty}" />
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Bots" Style="{StaticResource PageTitleText}" />

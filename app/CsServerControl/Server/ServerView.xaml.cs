@@ -38,9 +38,23 @@ public partial class ServerView : UserControl {
             return;
         }
         bool contentGrew = e.ExtentHeightChange > 0;
-        if (!contentGrew) {
-            _followTail = _consoleScroll.VerticalOffset >= _consoleScroll.ScrollableHeight - 2;
+        if (contentGrew) {
+            return;
         }
+        bool isAtEnd = _consoleScroll.VerticalOffset >= _consoleScroll.ScrollableHeight - 2;
+        // Only the user scrolling up turns Follow off; scrolling back down turns it on again.
+        if (isAtEnd != FollowToggle.IsChecked) {
+            FollowToggle.IsChecked = isAtEnd;
+        }
+    }
+
+    private void OnFollowChecked(object sender, RoutedEventArgs e) {
+        _followTail = true;
+        _consoleScroll?.ScrollToEnd();
+    }
+
+    private void OnFollowUnchecked(object sender, RoutedEventArgs e) {
+        _followTail = false;
     }
 
     private void ScrollToEndIfFollowing() {

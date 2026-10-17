@@ -19,6 +19,8 @@ public sealed class PackagePaths {
     public string MapsDir => Path.Combine(CstrikeDir, "maps");
     public string OverviewsDir => Path.Combine(CstrikeDir, "overviews");
     public string PreviewsDir => Path.Combine(ToolsDir, "previews");
+    // Rendered by the Maps screen; a real screenshot in PreviewsDir always wins.
+    public string GeneratedPreviewsDir => Path.Combine(PreviewsDir, "auto");
     public string HldsExe => Path.Combine(ServerDir, "hlds.exe");
     // -condebug writes into the engine folder, not into the mod folder.
     public string ConsoleLogFile => Path.Combine(ServerDir, "qconsole.log");

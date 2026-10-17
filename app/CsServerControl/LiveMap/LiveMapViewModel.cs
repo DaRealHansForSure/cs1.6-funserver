@@ -103,10 +103,18 @@ public sealed partial class KillFeedEntry : ObservableObject {
     public bool HasKiller => Killer.Length > 0;
 }
 
+/// <summary>One bullet on screen; Strength goes from 1 (just fired) to 0 (gone).</summary>
+public sealed record VisibleShot(System.Numerics.Vector3 Start, System.Numerics.Vector3 End, Team Team, bool HitPlayer, float Strength);
+
 public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
     private const int KillFeedSize = 6;
     private static readonly TimeSpan KillFeedLifetime = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan KillFeedFade = TimeSpan.FromSeconds(1);
+
+    // Shots arrive in batches every snapshot (0.2 s); a bit longer keeps a
+    // spray readable without the map filling up with old lines.
+    private static readonly TimeSpan ShotLifetime = TimeSpan.FromSeconds(0.8);
+    private const int MaxShotsShown = 400;
 
     // GoldSrc's player origin is the hull center: feet 36 units below, eyes 28 above.
     public const float FeetOffset = -36f;
@@ -116,6 +124,7 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
     private readonly IDialogService _dialogs;
     private readonly KillIcons _killIcons;
     private readonly Dictionary<int, PlayerTrack> _tracks = [];
+    private readonly List<(LiveShot Shot, Team Team, DateTime ReceivedAt)> _shots = [];
     private readonly DispatcherTimer _killFeedTimer;
     private LiveSnapshot? _snapshot;
     private bool _userPickedSelection;
@@ -136,6 +145,10 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
 
     [ObservableProperty]
     private bool _showTrails;
+
+    /// <summary>Bullet paths from the plugin, fading out after a moment.</summary>
+    [ObservableProperty]
+    private bool _showShots;
 
     /// <summary>Debug view: zBot's walkable areas, their links and hiding spots.</summary>
     [ObservableProperty]
@@ -173,11 +186,13 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         _dialogs = dialogs;
         _showNames = connection.Settings.ShowNames;
         _showTrails = connection.Settings.ShowTrails;
+        _showShots = connection.Settings.ShowShots;
         _showNavMesh = connection.Settings.ShowNavMesh;
 
         Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
         _connection.Feed.SnapshotReceived += (_, snapshot) => dispatcher.BeginInvoke(() => OnSnapshot(snapshot));
         _connection.Feed.KillReceived += (_, kill) => dispatcher.BeginInvoke(() => OnKill(kill));
+        _connection.Feed.ShotsReceived += (_, batch) => dispatcher.BeginInvoke(() => OnShots(batch));
         _connection.MapChanged += (_, _) => LoadMap(_connection.CurrentMap);
         _connection.PropertyChanged += OnConnectionChanged;
 
@@ -291,6 +306,18 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         return _tracks.Values
             .Where(track => track.Latest.Team != Team.Spectator)
             .Select(track => track.RenderState(now))
+            .ToList();
+    }
+
+    /// <summary>The bullets still on screen, oldest first, with how far each has faded.</summary>
+    public IReadOnlyList<VisibleShot> GetVisibleShots(DateTime now) {
+        _shots.RemoveAll(entry => now - entry.ReceivedAt >= ShotLifetime);
+        if (!ShowShots || !HasLiveData) {
+            return [];
+        }
+        return _shots
+            .Select(entry => new VisibleShot(entry.Shot.Start, entry.Shot.End, entry.Team, entry.Shot.HitPlayer,
+                1f - (float)((now - entry.ReceivedAt).TotalSeconds / ShotLifetime.TotalSeconds)))
             .ToList();
     }
 
@@ -488,6 +515,14 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         _connection.Settings.Save();
     }
 
+    partial void OnShowShotsChanged(bool value) {
+        _connection.Settings.ShowShots = value;
+        _connection.Settings.Save();
+        if (!value) {
+            _shots.Clear();
+        }
+    }
+
     partial void OnSelectedPlayerChanged(PlayerRowViewModel? oldValue, PlayerRowViewModel? newValue) {
         if (oldValue != null) {
             oldValue.IsSelected = false;
@@ -622,6 +657,21 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         }
         int playing = _snapshot.Players.Count;
         MapSubtitle = $"{GameModes.TitleOf(_snapshot.ModeId)} · Round {round} · {playing} / {_snapshot.MaxPlayers} players";
+    }
+
+    private void OnShots(LiveShotBatch batch) {
+        if (!ShowShots || !IsVisible) {
+            return;
+        }
+        DateTime now = DateTime.UtcNow;
+        foreach (LiveShot shot in batch.Shots) {
+            // The shooter's team colors the line; a shooter not in the last snapshot draws neutral.
+            Team team = _tracks.TryGetValue(shot.ShooterUserId, out PlayerTrack? track) ? track.Latest.Team : Team.Spectator;
+            _shots.Add((shot, team, now));
+        }
+        if (_shots.Count > MaxShotsShown) {
+            _shots.RemoveRange(0, _shots.Count - MaxShotsShown);
+        }
     }
 
     private void OnKill(LiveKill kill) {

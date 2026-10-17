@@ -10,10 +10,16 @@
 //   CSLIVE1|S|<map>|<mode>|<roundSecondsLeft>|<maxPlayers>
 //   P|<userid>|<name>|<team>|<alive>|<bot>|<hp>|<x>|<y>|<z>|<yaw>|<frags>|<deaths>|<weapon>|<hooking>|<hx>|<hy>|<hz>|<glowR>|<glowG>|<glowB>
 //   CSLIVE1|K|<killerUserid>|<victimUserid>|<weapon>|<headshot>
+//   CSLIVE1|T, then one line per bullet: <shooterUserid>|<sx>|<sy>|<sz>|<ex>|<ey>|<ez>|<hitPlayer>
 //
 // The glow color is the glow shell a player has right now (amx_glow, kill
 // streaks, Juggernaut, zombies all use it), -1|-1|-1 without one. The app
 // also reads player lines that end after <hz>, from older versions.
+//
+// Shot traces are the real bullet paths: while a gun fires, the engine's
+// TraceLine calls of that shot are recorded (spread, shotgun pellets and
+// wall penetration included). They are collected and sent once per
+// snapshot, so a full auto spray does not mean one packet per bullet.
 //
 // Cvars:
 //   fun_livemap_target    IP address of the app (default 127.0.0.1)
@@ -22,6 +28,7 @@
 
 #include <amxmodx>
 #include <fakemeta>
+#include <hamsandwich>
 #include <sockets>
 #include <fun_common>
 
@@ -52,10 +59,21 @@ const ROUND_TIME_UNKNOWN = -1;
 const TEAM_TERRORIST = 1;
 const TEAM_CT = 2;
 
+const MAX_SHOTS_PER_PACKET = 80;
+
 // 32 players at about 110 bytes per line fit with plenty of room. Global,
 // because a plugin only gets 16 KB of stack and heap.
 new gPacket[4096];
 new gKillPacket[256];
+// About 45 characters per bullet; bullets beyond MAX_SHOTS_PER_PACKET are dropped.
+new gShotPacket[4096];
+new gShotPacketLength;
+new gShotCount;
+
+// Set only while a gun fires, so the TraceLine forward is not active for
+// the thousands of traces bots do every second to look around.
+new gShooterId;
+new gTraceForward = -1;
 
 new gSocket = SOCKET_CLOSED;
 new gTargetCvar;
@@ -106,6 +124,19 @@ public plugin_init()
 
     register_event("DeathMsg", "onDeathMessage", "a");
     register_logevent("onRoundStart", 2, "1=Round_Start");
+
+    // Knife and grenades are left out on purpose: they fire no bullets.
+    new const gunClassNames[][] = {
+        "weapon_p228", "weapon_scout", "weapon_xm1014", "weapon_mac10", "weapon_aug", "weapon_elite",
+        "weapon_fiveseven", "weapon_ump45", "weapon_sg550", "weapon_galil", "weapon_famas", "weapon_usp",
+        "weapon_glock18", "weapon_awp", "weapon_mp5navy", "weapon_m249", "weapon_m3", "weapon_m4a1",
+        "weapon_tmp", "weapon_g3sg1", "weapon_deagle", "weapon_sg552", "weapon_ak47", "weapon_p90"
+    };
+    for (new index = 0; index < sizeof(gunClassNames); index++) {
+        RegisterHam(Ham_Weapon_PrimaryAttack, gunClassNames[index], "onGunFirePre", 0);
+        RegisterHam(Ham_Weapon_PrimaryAttack, gunClassNames[index], "onGunFirePost", 1);
+    }
+    resetShotPacket();
 }
 
 public plugin_cfg()
@@ -209,11 +240,92 @@ public onDeathMessage()
     socket_send2(gSocket, gKillPacket, length);
 }
 
+public onGunFirePre(weaponId)
+{
+    if (gSocket == SOCKET_CLOSED) {
+        return HAM_IGNORED;
+    }
+
+    new ownerId = pev(weaponId, pev_owner);
+    if (ownerId < 1 || ownerId > MaxClients || !is_user_alive(ownerId)) {
+        return HAM_IGNORED;
+    }
+
+    gShooterId = ownerId;
+    if (gTraceForward == -1) {
+        gTraceForward = register_forward(FM_TraceLine, "onTraceLine", 1);
+    }
+    return HAM_IGNORED;
+}
+
+public onGunFirePost(weaponId)
+{
+    stopRecordingShot();
+    return HAM_IGNORED;
+}
+
+stopRecordingShot()
+{
+    gShooterId = 0;
+    if (gTraceForward != -1) {
+        unregister_forward(FM_TraceLine, gTraceForward, 1);
+        gTraceForward = -1;
+    }
+}
+
+public onTraceLine(const Float:start[3], const Float:end[3], noMonsters, skipEntity, traceHandle)
+{
+    // Only the shooter's own traces: a plugin reacting to the shot inside
+    // the same call could trace for something else.
+    if (gShooterId == 0 || skipEntity != gShooterId) {
+        return FMRES_IGNORED;
+    }
+    if (gShotCount >= MAX_SHOTS_PER_PACKET) {
+        return FMRES_IGNORED;
+    }
+
+    new Float:hitPoint[3];
+    get_tr2(traceHandle, TR_vecEndPos, hitPoint);
+    new hitEntity = get_tr2(traceHandle, TR_pHit);
+    new isPlayerHit = hitEntity >= 1 && hitEntity <= MaxClients;
+
+    gShotPacketLength += formatex(gShotPacket[gShotPacketLength], charsmax(gShotPacket) - gShotPacketLength,
+        "^n%d|%d|%d|%d|%d|%d|%d|%d",
+        get_user_userid(gShooterId),
+        floatround(start[0]), floatround(start[1]), floatround(start[2]),
+        floatround(hitPoint[0]), floatround(hitPoint[1]), floatround(hitPoint[2]),
+        isPlayerHit ? 1 : 0);
+    gShotCount++;
+    return FMRES_IGNORED;
+}
+
+resetShotPacket()
+{
+    gShotPacketLength = formatex(gShotPacket, charsmax(gShotPacket), "%s|T", PACKET_PREFIX);
+    gShotCount = 0;
+}
+
+sendShots()
+{
+    if (gShotCount == 0) {
+        return;
+    }
+    socket_send2(gSocket, gShotPacket, gShotPacketLength);
+    resetShotPacket();
+}
+
 public sendSnapshot()
 {
     if (gSocket == SOCKET_CLOSED) {
         return;
     }
+
+    // A shot whose post hook never came (another plugin blocked it) must not
+    // leave the trace forward running.
+    if (gTraceForward != -1) {
+        stopRecordingShot();
+    }
+    sendShots();
 
     new mapName[MAX_MAPNAME_LENGTH];
     get_mapname(mapName, charsmax(mapName));

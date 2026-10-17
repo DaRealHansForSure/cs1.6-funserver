@@ -11,6 +11,9 @@ namespace CsServerControl.Services;
 /// Starts and stops hlds.exe and the fast download server, or attaches to an
 /// hlds.exe of this package that is already running (started by hand or by an earlier window).
 /// </summary>
+/// <summary>One inbound firewall rule of the package; Exists is null when netsh could not tell.</summary>
+public sealed record FirewallRuleState(string Name, string Protocol, int Port, bool? Exists);
+
 public sealed class ServerProcess {
     public const int GamePort = 27015;
     public const int FastDownloadPort = 27080;
@@ -55,6 +58,28 @@ public sealed class ServerProcess {
                 return null;
             }
         }
+    }
+
+    /// <summary>Every IPv4 address of this PC the others could reach, for the Options screen.</summary>
+    public static IReadOnlyList<IPAddress> ListLanAddresses() {
+        return NetworkInterface.GetAllNetworkInterfaces()
+            .Where(adapter => adapter.OperationalStatus == OperationalStatus.Up)
+            .SelectMany(adapter => adapter.GetIPProperties().UnicastAddresses)
+            .Select(unicast => unicast.Address)
+            .Where(address => address.AddressFamily == AddressFamily.InterNetwork
+                && !IPAddress.IsLoopback(address)
+                && !address.ToString().StartsWith("169.254.", StringComparison.Ordinal))
+            .Distinct()
+            .ToList();
+    }
+
+    /// <summary>The chosen address when it still exists on this PC, else the automatic one.</summary>
+    public static IPAddress ResolveLanAddress(string? chosenAddress) {
+        bool isChosen = IPAddress.TryParse(chosenAddress, out IPAddress? chosen);
+        if (isChosen && ListLanAddresses().Contains(chosen!)) {
+            return chosen!;
+        }
+        return FindLanAddress();
     }
 
     public static IPAddress FindLanAddress() {
@@ -225,28 +250,35 @@ public sealed class ServerProcess {
     }
 
     public static bool AreFirewallRulesMissing() {
-        foreach ((string name, _, _) in FirewallRules) {
-            try {
-                using Process? check = Process.Start(new ProcessStartInfo {
-                    FileName = "netsh",
-                    Arguments = $"advfirewall firewall show rule name=\"{name}\"",
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                });
-                if (check == null) {
-                    return false;
-                }
-                check.StandardOutput.ReadToEnd();
-                check.WaitForExit();
-                if (check.ExitCode != 0) {
-                    return true;
-                }
-            } catch (Win32Exception) {
-                return false;
+        return ReadFirewallRules().Any(rule => rule.Exists == false);
+    }
+
+    /// <summary>
+    /// Every inbound rule this package needs and whether Windows has it. Null
+    /// for Exists when netsh could not be asked. Blocks for a moment per rule.
+    /// </summary>
+    public static IReadOnlyList<FirewallRuleState> ReadFirewallRules() {
+        return FirewallRules.Select(rule => new FirewallRuleState(rule.Name, rule.Protocol, rule.Port, RuleExists(rule.Name))).ToList();
+    }
+
+    private static bool? RuleExists(string name) {
+        try {
+            using Process? check = Process.Start(new ProcessStartInfo {
+                FileName = "netsh",
+                Arguments = $"advfirewall firewall show rule name=\"{name}\"",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+            });
+            if (check == null) {
+                return null;
             }
+            check.StandardOutput.ReadToEnd();
+            check.WaitForExit();
+            return check.ExitCode == 0;
+        } catch (Win32Exception) {
+            return null;
         }
-        return false;
     }
 
     /// <summary>
@@ -254,21 +286,27 @@ public sealed class ServerProcess {
     /// left closed on purpose: it only ever talks to this PC. Each rule is
     /// deleted before it is added, so rules that already exist are not doubled.
     /// </summary>
-    public static void AddFirewallRules() {
+    public static async Task<bool> AddFirewallRulesAsync() {
         IEnumerable<string> commands = FirewallRules.SelectMany(rule => new[] {
             $"netsh advfirewall firewall delete rule name=\"{rule.Name}\" >nul",
             $"netsh advfirewall firewall add rule name=\"{rule.Name}\" dir=in action=allow protocol={rule.Protocol} localport={rule.Port} >nul",
         });
         try {
-            Process.Start(new ProcessStartInfo {
+            using Process? elevated = Process.Start(new ProcessStartInfo {
                 FileName = "cmd.exe",
                 Arguments = "/c " + string.Join(" & ", commands),
                 Verb = "runas",
                 UseShellExecute = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
             });
+            if (elevated == null) {
+                return false;
+            }
+            await elevated.WaitForExitAsync();
+            return true;
         } catch (Win32Exception) {
             // The user said no to the UAC prompt; Windows will ask on its own later.
+            return false;
         }
     }
 

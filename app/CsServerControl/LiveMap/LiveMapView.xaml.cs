@@ -283,7 +283,8 @@ public partial class LiveMapView : UserControl {
         float? ringRadius = SelectionRingRadius(players);
         var look = new Vector3((float)Camera.LookDirection.X, (float)Camera.LookDirection.Y, (float)Camera.LookDirection.Z);
 
-        PlayerLines lines = PlayerSceneBuilder.Build(players, _viewModel.SelectedUserId, ringRadius, _viewModel.ShowTrails, look, Colors);
+        IReadOnlyList<VisibleShot> shots = _viewModel.GetVisibleShots(DateTime.UtcNow);
+        PlayerLines lines = PlayerSceneBuilder.Build(players, _viewModel.SelectedUserId, ringRadius, _viewModel.ShowTrails, shots, look, Colors);
         PlayerThinLines.Geometry = NullIfEmpty(lines.Thin);
         PlayerMediumLines.Geometry = NullIfEmpty(lines.Medium);
         PlayerWideLines.Geometry = NullIfEmpty(lines.Wide);

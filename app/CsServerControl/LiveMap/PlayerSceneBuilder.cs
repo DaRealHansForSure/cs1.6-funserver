@@ -62,6 +62,7 @@ public sealed record PlayerLines(LineGeometry3D Thin, LineGeometry3D Medium, Lin
 public static class PlayerSceneBuilder {
     private const float ViewLineLength = 140f;
     private const float DeadCrossSize = 24f;
+    private const float ShotHitCrossSize = 10f;
 
     private const int SelectionRingSegments = 24;
 
@@ -70,11 +71,15 @@ public static class PlayerSceneBuilder {
         int? selectedUserId,
         float? selectionRingRadius,
         bool showTrails,
+        IReadOnlyList<VisibleShot> shots,
         Vector3 cameraLookDirection,
         SceneColors colors) {
         var thin = new LineSet();
         var medium = new LineSet();
         var wide = new LineSet();
+
+        // Shots first, so the players are drawn on top of a crossfire.
+        AddShots(thin, medium, shots, colors);
 
         foreach (PlayerRenderState player in players) {
             MediaColor teamColor = colors.TeamColor(player.Team);
@@ -118,6 +123,29 @@ public static class PlayerSceneBuilder {
         }
 
         return new PlayerLines(thin.ToGeometry(), medium.ToGeometry(), wide.ToGeometry());
+    }
+
+    /// <summary>
+    /// Bullet paths in the shooter's team color, fading with age. A bullet that
+    /// hit a player is drawn thicker and ends in a small cross.
+    /// </summary>
+    private static void AddShots(LineSet thin, LineSet medium, IReadOnlyList<VisibleShot> shots, SceneColors colors) {
+        foreach (VisibleShot shot in shots) {
+            MediaColor teamColor = colors.TeamColor(shot.Team);
+            Vector3 start = ToVector(shot.Start);
+            Vector3 end = ToVector(shot.End);
+            if (!shot.HitPlayer) {
+                thin.Add(start, end, WireframeScene.Blend(teamColor, colors.Background, 0.55f * shot.Strength));
+                continue;
+            }
+
+            Color4 hitColor = WireframeScene.Blend(teamColor, colors.Background, 0.9f * shot.Strength);
+            medium.Add(start, end, hitColor);
+            float half = ShotHitCrossSize / 2;
+            thin.Add(end + new Vector3(-half, 0, -half), end + new Vector3(half, 0, half), hitColor);
+            thin.Add(end + new Vector3(0, -half, -half), end + new Vector3(0, half, half), hitColor);
+            thin.Add(end + new Vector3(-half, -half, 0), end + new Vector3(half, half, 0), hitColor);
+        }
     }
 
     /// <summary>A white circle around the head marker that always faces the camera.</summary>

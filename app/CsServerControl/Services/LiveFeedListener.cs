@@ -24,6 +24,9 @@ public sealed class LiveFeedListener : IDisposable {
     /// <summary>Raised on a thread pool thread.</summary>
     public event EventHandler<LiveKill>? KillReceived;
 
+    /// <summary>Raised on a thread pool thread.</summary>
+    public event EventHandler<LiveShotBatch>? ShotsReceived;
+
     public bool HasLiveData => DateTime.UtcNow - _lastSnapshotAt < StaleAfter;
 
     public int MalformedLineCount => _parser.MalformedLineCount;
@@ -75,6 +78,8 @@ public sealed class LiveFeedListener : IDisposable {
                     SnapshotReceived?.Invoke(this, snapshot);
                 } else if (parsed is LiveKill kill) {
                     KillReceived?.Invoke(this, kill);
+                } else if (parsed is LiveShotBatch shots) {
+                    ShotsReceived?.Invoke(this, shots);
                 }
             }
         }

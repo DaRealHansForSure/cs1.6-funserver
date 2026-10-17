@@ -105,7 +105,7 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
         Settings = settings;
         _dispatcher = dispatcher;
         Process = new ServerProcess(paths);
-        LanAddress = ServerProcess.FindLanAddress();
+        LanAddress = ServerProcess.ResolveLanAddress(settings.LanAddress);
 
         Rcon = new RconClient {
             Server = new IPEndPoint(LanAddress, ServerProcess.GamePort),
@@ -130,7 +130,7 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
     public ServerProcess Process { get; }
     public RconClient Rcon { get; }
     public LiveFeedListener Feed { get; }
-    public IPAddress LanAddress { get; }
+    public IPAddress LanAddress { get; private set; }
     public string GameAddress => $"{LanAddress}:{ServerProcess.GamePort}";
     private IPEndPoint QueryEndpoint => new(LanAddress, ServerProcess.GamePort);
 
@@ -173,6 +173,45 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
         } catch (RconException) {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Only while stopped: a running server stays bound to its address, and
+    /// RCON and the query would then talk to an address it does not listen on.
+    /// Empty picks the adapter with the default gateway.
+    /// </summary>
+    public bool ChangeLanAddress(string chosenAddress) {
+        if (IsRunning) {
+            return false;
+        }
+        Settings.LanAddress = chosenAddress;
+        Settings.Save();
+        LanAddress = ServerProcess.ResolveLanAddress(chosenAddress);
+        Rcon.Server = new IPEndPoint(LanAddress, ServerProcess.GamePort);
+        Rcon.Reset();
+        OnPropertyChanged(nameof(LanAddress));
+        OnPropertyChanged(nameof(GameAddress));
+        return true;
+    }
+
+    /// <summary>
+    /// Only while stopped: telling a running server the new password would
+    /// write it into the console and the logs. The next start uses it.
+    /// </summary>
+    public bool RenewRconPassword() {
+        if (IsRunning) {
+            return false;
+        }
+        string password = AppSettings.CreatePassword();
+        Settings.RconPassword = password;
+        Settings.Save();
+        // Before the first install there is no cstrike folder; the first start writes it.
+        if (Paths.IsServerInstalled) {
+            Process.WriteLocalConfigPassword(password);
+        }
+        Rcon.Password = password;
+        Rcon.Reset();
+        return true;
     }
 
     /// <summary>Starts on the given map when it is installed, else on the first map of the mode.</summary>

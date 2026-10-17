@@ -6,6 +6,8 @@
         xmlns:server="clr-namespace:CsServerControl.Server"
         xmlns:bots="clr-namespace:CsServerControl.Bots"
         xmlns:stats="clr-namespace:CsServerControl.Stats"
+        xmlns:maps="clr-namespace:CsServerControl.Maps"
+        xmlns:options="clr-namespace:CsServerControl.Options"
         xmlns:install="clr-namespace:CsServerControl.Install"
         Title="CS 1.6 Server Control"
         Icon="/app.ico"
@@ -215,8 +217,8 @@
             <!-- Navigation rail -->
             <Border Grid.Column="0" Background="{StaticResource RailBackground}" Padding="{StaticResource RailPadding}">
                 <DockPanel LastChildFill="False" KeyboardNavigation.TabNavigation="Once" KeyboardNavigation.DirectionalNavigation="Cycle">
-                    <RadioButton DockPanel.Dock="Bottom" Style="{StaticResource RailItem}" Content="Options" IsEnabled="False"
-                                 GroupName="Rail" ToolTip="Coming later" Margin="0"
+                    <RadioButton DockPanel.Dock="Bottom" Style="{StaticResource RailItem}" Content="Options" GroupName="Rail" Margin="0"
+                                 IsChecked="{Binding IsOptionsSelected, Mode=TwoWay}"
                                  Tag="M 12 9 A 3 3 0 1 0 12.001 9 Z M 12 3 L 12 5.5 M 12 18.5 L 12 21 M 3 12 L 5.5 12 M 18.5 12 L 21 12 M 5.6 5.6 L 7.4 7.4 M 16.6 16.6 L 18.4 18.4 M 5.6 18.4 L 7.4 16.6 M 16.6 7.4 L 18.4 5.6" />
                     <RadioButton DockPanel.Dock="Bottom" Style="{StaticResource RailItem}" Content="Install" GroupName="Rail"
                                  IsChecked="{Binding IsInstallSelected, Mode=TwoWay}"
@@ -230,12 +232,12 @@
                     <RadioButton DockPanel.Dock="Top" Style="{StaticResource RailItem}" Content="Bots" GroupName="Rail"
                                  IsChecked="{Binding IsBotsSelected, Mode=TwoWay}"
                                  Tag="M 6 8 L 18 8 L 18 19 L 6 19 Z M 12 8 L 12 4.5 M 9.5 12.5 L 9.5 13.5 M 14.5 12.5 L 14.5 13.5 M 9.5 16 L 14.5 16 M 4 12 L 4 15 M 20 12 L 20 15" />
+                    <RadioButton DockPanel.Dock="Top" Style="{StaticResource RailItem}" Content="Maps" GroupName="Rail"
+                                 IsChecked="{Binding IsMapsSelected, Mode=TwoWay}"
+                                 Tag="M 12 4 L 20 8 L 12 12 L 4 8 Z M 4 12 L 12 16 L 20 12 M 4 16 L 12 20 L 20 16" />
                     <RadioButton DockPanel.Dock="Top" Style="{StaticResource RailItem}" Content="Stats" GroupName="Rail"
                                  IsChecked="{Binding IsStatsSelected, Mode=TwoWay}"
                                  Tag="M 4 20 L 20 20 M 6 20 L 6 13 M 10.5 20 L 10.5 7 M 15 20 L 15 10 M 19 20 L 19 4" />
-                    <RadioButton DockPanel.Dock="Top" Style="{StaticResource RailItem}" Content="Maps" IsEnabled="False"
-                                 GroupName="Rail" ToolTip="Coming later"
-                                 Tag="M 12 4 L 20 8 L 12 12 L 4 8 Z M 4 12 L 12 16 L 20 12 M 4 16 L 12 20 L 20 16" />
                 </DockPanel>
             </Border>
 
@@ -284,6 +286,10 @@
                                  Visibility="{Binding DataContext.IsStatsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
                 <install:InstallView x:Name="InstallScreen" DataContext="{Binding Install}"
                                      Visibility="{Binding DataContext.IsInstallSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
+                <maps:MapsView x:Name="MapsScreen" DataContext="{Binding Maps}"
+                               Visibility="{Binding DataContext.IsMapsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
+                <options:OptionsView x:Name="OptionsScreen" DataContext="{Binding Options}"
+                                     Visibility="{Binding DataContext.IsOptionsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
                 </Grid>
             </Grid>
         </Grid>

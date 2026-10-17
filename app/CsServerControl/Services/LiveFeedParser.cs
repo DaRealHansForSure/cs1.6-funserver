@@ -38,6 +38,12 @@ public sealed record LiveSnapshot(
 
 public sealed record LiveKill(int KillerUserId, int VictimUserId, string Weapon, bool IsHeadshot);
 
+/// <summary>One bullet: from the muzzle of the shooter to where it stopped.</summary>
+public sealed record LiveShot(int ShooterUserId, Vector3 Start, Vector3 End, bool HitPlayer);
+
+/// <summary>The bullets fired since the last snapshot.</summary>
+public sealed record LiveShotBatch(IReadOnlyList<LiveShot> Shots);
+
 /// <summary>
 /// Parses the text packets of fun_livemap.amxx (spec section 10.3). Packets
 /// without the CSLIVE1 prefix are rejected, broken lines are skipped and
@@ -51,7 +57,7 @@ public sealed class LiveFeedParser {
 
     public int MalformedLineCount { get; private set; }
 
-    /// <summary>Returns a LiveSnapshot, a LiveKill, or null for anything else.</summary>
+    /// <summary>Returns a LiveSnapshot, a LiveKill, a LiveShotBatch, or null for anything else.</summary>
     public object? Parse(byte[] packet) {
         string text;
         try {
@@ -81,6 +87,9 @@ public sealed class LiveFeedParser {
         if (header[1] == "S") {
             return ParseSnapshot(header, lines);
         }
+        if (header[1] == "T") {
+            return ParseShots(lines);
+        }
 
         MalformedLineCount++;
         return null;
@@ -92,6 +101,41 @@ public sealed class LiveFeedParser {
             return null;
         }
         return new LiveKill(killer, victim, header[4], header[5] == "1");
+    }
+
+    private LiveShotBatch ParseShots(string[] lines) {
+        var shots = new List<LiveShot>();
+        foreach (string line in lines.Skip(1)) {
+            if (line.Length == 0) {
+                continue;
+            }
+
+            LiveShot? shot = ParseShot(line);
+            if (shot == null) {
+                MalformedLineCount++;
+                continue;
+            }
+            shots.Add(shot);
+        }
+        return new LiveShotBatch(shots);
+    }
+
+    private static LiveShot? ParseShot(string line) {
+        string[] fields = line.Split('|');
+        if (fields.Length < 8) {
+            return null;
+        }
+        bool numbersOk = TryInt(fields[0], out int shooter)
+            & TryFloat(fields[1], out float startX)
+            & TryFloat(fields[2], out float startY)
+            & TryFloat(fields[3], out float startZ)
+            & TryFloat(fields[4], out float endX)
+            & TryFloat(fields[5], out float endY)
+            & TryFloat(fields[6], out float endZ);
+        if (!numbersOk) {
+            return null;
+        }
+        return new LiveShot(shooter, new Vector3(startX, startY, startZ), new Vector3(endX, endY, endZ), fields[7] == "1");
     }
 
     private LiveSnapshot? ParseSnapshot(string[] header, string[] lines) {

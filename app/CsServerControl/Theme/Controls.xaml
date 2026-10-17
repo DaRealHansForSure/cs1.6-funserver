@@ -107,6 +107,12 @@
             <Trigger Property="IsMouseOver" Value="True">
                 <Setter Property="Background" Value="{StaticResource AccentHover}" />
             </Trigger>
+            <!-- A faded accent still reads as "press me"; disabled looks like a plain control. -->
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Background" Value="{StaticResource ControlBackground}" />
+                <Setter Property="Foreground" Value="{StaticResource TextDisabled}" />
+                <Setter Property="Cursor" Value="Arrow" />
+            </Trigger>
         </Style.Triggers>
     </Style>
 

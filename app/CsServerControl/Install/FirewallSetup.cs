@@ -6,7 +6,7 @@ namespace CsServerControl.Install;
 
 /// <summary>
 /// The inbound Windows Firewall rules for the game, fast download and HLTV
-/// ports, the same rules <see cref="ServerProcess.AddFirewallRules"/> adds.
+/// ports, the same rules <see cref="ServerProcess.AddFirewallRulesAsync"/> adds.
 /// The app is not elevated, so missing rules go through one elevated netsh
 /// run; when every rule is there, no UAC prompt shows up at all.
 /// </summary>

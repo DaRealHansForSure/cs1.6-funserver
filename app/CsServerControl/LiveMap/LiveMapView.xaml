@@ -59,6 +59,8 @@
                     <Border Style="{StaticResource VerticalDivider}" Margin="0,0,6,0" />
                     <ToggleButton Content="Names" Style="{StaticResource ToolbarToggle}" IsChecked="{Binding ShowNames, Mode=TwoWay}" Margin="0,0,6,0" />
                     <ToggleButton Content="Trails" Style="{StaticResource ToolbarToggle}" IsChecked="{Binding ShowTrails, Mode=TwoWay}" Margin="0,0,6,0" />
+                    <ToggleButton Content="Shots" Style="{StaticResource ToolbarToggle}" IsChecked="{Binding ShowShots, Mode=TwoWay}" Margin="0,0,6,0"
+                                  ToolTip="Bullet paths in the team color; a hit on a player is drawn thicker with a cross" />
                     <Border Style="{StaticResource VerticalDivider}" Margin="0,0,6,0" />
                     <ToggleButton Content="Nav mesh" Style="{StaticResource ToolbarToggle}" IsChecked="{Binding ShowNavMesh, Mode=TwoWay}"
                                   ToolTip="Debug view: zBot walkable areas (violet), links between them and hiding spots (yellow)" />

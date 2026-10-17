@@ -121,4 +121,17 @@ public class LiveFeedParserTests {
 
         Assert.Single(snapshot.Players);
     }
+
+    [Fact]
+    public void ReadsShotBatchesAndSkipsBrokenLines() {
+        var parser = new LiveFeedParser();
+        string packet = "CSLIVE1|T\n7|10|20|30|400|-50|28|1\nbroken|line\n8|0|0|0|1|1|1|0\n";
+
+        var batch = Assert.IsType<LiveShotBatch>(parser.Parse(packet));
+
+        Assert.Equal(2, batch.Shots.Count);
+        Assert.Equal(new LiveShot(7, new System.Numerics.Vector3(10, 20, 30), new System.Numerics.Vector3(400, -50, 28), HitPlayer: true), batch.Shots[0]);
+        Assert.False(batch.Shots[1].HitPlayer);
+        Assert.Equal(1, parser.MalformedLineCount);
+    }
 }

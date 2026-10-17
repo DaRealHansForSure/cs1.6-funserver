@@ -18,7 +18,7 @@ public sealed partial class MapDetailsViewModel : ModalViewModel {
     private const int PreviewWidth = 640;
 
     private readonly ServerConnection _connection;
-    private readonly Action _pickMap;
+    private readonly Action? _pickMap;
     private readonly Func<Task> _setNextMap;
 
     [ObservableProperty]
@@ -30,7 +30,7 @@ public sealed partial class MapDetailsViewModel : ModalViewModel {
     [ObservableProperty]
     private string? _overviewMessage;
 
-    public MapDetailsViewModel(ServerConnection connection, string mapName, string modeTitle, Action pickMap, Func<Task> setNextMap) {
+    public MapDetailsViewModel(ServerConnection connection, string mapName, string modeTitle, Action? pickMap, Func<Task> setNextMap) {
         _connection = connection;
         _pickMap = pickMap;
         _setNextMap = setNextMap;
@@ -42,6 +42,8 @@ public sealed partial class MapDetailsViewModel : ModalViewModel {
 
     public string MapName { get; }
     public string PickText { get; }
+    /// <summary>False for a map no mode with a tile plays, there is nothing to pick it for.</summary>
+    public bool CanPick => _pickMap != null;
     public ImageSource? Preview { get; }
     public bool HasPreview => Preview != null;
     public bool IsServerRunning => _connection.IsRunning;
@@ -49,7 +51,7 @@ public sealed partial class MapDetailsViewModel : ModalViewModel {
 
     [RelayCommand]
     private void Pick() {
-        _pickMap();
+        _pickMap?.Invoke();
         Close();
     }
 

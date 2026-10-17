@@ -22,9 +22,14 @@ public sealed class AppSettings {
     public string LastScreen { get; set; } = "LiveMap";
     public bool ShowNames { get; set; } = true;
     public bool ShowTrails { get; set; } = true;
+    public bool ShowShots { get; set; } = true;
     public bool ShowNavMesh { get; set; }
     public int MaxPlayers { get; set; } = ServerProcess.DefaultMaxPlayers;
     public bool FirewallAsked { get; set; }
+    /// <summary>The LAN address the server binds to; empty picks the adapter with the default gateway.</summary>
+    public string LanAddress { get; set; } = "";
+    /// <summary>The screen the window opens on; empty opens the one used last.</summary>
+    public string StartScreen { get; set; } = "";
 
     public static string SettingsFile => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CsServerControl", "settings.json");

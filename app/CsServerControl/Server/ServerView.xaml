@@ -93,8 +93,67 @@
             <!-- Left column -->
             <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" Focusable="False">
                 <StackPanel>
+                    <!-- Settings: part of the draft, saved in local.cfg on Apply. -->
+                    <Border Style="{StaticResource Card}" DataContext="{Binding Settings}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,12">
+                                <TextBlock DockPanel.Dock="Right" Text="Saved in cstrike\local.cfg on Apply" Style="{StaticResource HintText}" />
+                                <TextBlock Text="Settings" Style="{StaticResource CardTitleText}" />
+                            </DockPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="{StaticResource LiveGapColumn}" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
+                                    <TextBlock Text="Server name" Style="{StaticResource LabelText}" />
+                                    <TextBox Style="{StaticResource TextInput}" Text="{Binding ServerName, UpdateSourceTrigger=PropertyChanged}"
+                                             AutomationProperties.Name="Server name" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
+                                    <TextBlock Text="Join password" Style="{StaticResource LabelText}" />
+                                    <TextBox Style="{StaticResource TextInput}" Tag="Empty: everybody can join"
+                                             Text="{Binding JoinPassword, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Join password" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
+                                    <TextBlock Text="Max players" Style="{StaticResource LabelText}" />
+                                    <TextBox Style="{StaticResource TextInput}" Text="{Binding MaxPlayersText, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="2" AutomationProperties.Name="Max players" />
+                                    <TextBlock Text="Takes effect on the next start or restart" Style="{StaticResource HintText}" Margin="0,4,0,0"
+                                               Visibility="{Binding IsMaxPlayersPending, Converter={StaticResource VisibleWhenTrue}}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
+                                    <TextBlock Text="Fun round every (rounds)" Style="{StaticResource LabelText}" />
+                                    <TextBox Style="{StaticResource TextInput}" Text="{Binding FunRoundsEveryText, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="2" AutomationProperties.Name="Fun round every" IsEnabled="{Binding FunRoundsEnabled}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="0">
+                                    <TextBlock Text="Hook speed" Style="{StaticResource LabelText}" />
+                                    <TextBox Style="{StaticResource TextInput}" Text="{Binding HookSpeedText, UpdateSourceTrigger=PropertyChanged}"
+                                             MaxLength="4" AutomationProperties.Name="Hook speed" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="2" VerticalAlignment="Bottom">
+                                    <CheckBox Style="{StaticResource AccentCheckBox}" IsChecked="{Binding FunRoundsEnabled}" Margin="0,0,0,10">
+                                        <TextBlock>Fun rounds in Classic Fun <Run Text="fun_rounds_enabled" FontFamily="{StaticResource MonoFont}"
+                                                   FontSize="{StaticResource FontSizeSmall}" Foreground="{StaticResource TextTertiary}" /></TextBlock>
+                                    </CheckBox>
+                                    <CheckBox Style="{StaticResource AccentCheckBox}" IsChecked="{Binding HookAdminOnly}">
+                                        <TextBlock>Hook for admins only <Run Text="fun_hook_admin_only" FontFamily="{StaticResource MonoFont}"
+                                                   FontSize="{StaticResource FontSizeSmall}" Foreground="{StaticResource TextTertiary}" /></TextBlock>
+                                    </CheckBox>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Mode -->
-                    <Border Style="{StaticResource Card}">
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0">
                         <StackPanel>
                             <TextBlock Text="Mode" Style="{StaticResource CardTitleText}" Margin="0,0,0,12" />
                             <ItemsControl ItemsSource="{Binding ModeTiles}" Focusable="False">
@@ -239,65 +298,6 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Settings: part of the draft, saved in local.cfg on Apply. -->
-                    <Border Style="{StaticResource Card}" Margin="0,16,0,0" DataContext="{Binding Settings}">
-                        <StackPanel>
-                            <DockPanel Margin="0,0,0,12">
-                                <TextBlock DockPanel.Dock="Right" Text="Saved in cstrike\local.cfg on Apply" Style="{StaticResource HintText}" />
-                                <TextBlock Text="Settings" Style="{StaticResource CardTitleText}" />
-                            </DockPanel>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="{StaticResource LiveGapColumn}" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,12">
-                                    <TextBlock Text="Server name" Style="{StaticResource LabelText}" />
-                                    <TextBox Style="{StaticResource TextInput}" Text="{Binding ServerName, UpdateSourceTrigger=PropertyChanged}"
-                                             AutomationProperties.Name="Server name" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
-                                    <TextBlock Text="Join password" Style="{StaticResource LabelText}" />
-                                    <TextBox Style="{StaticResource TextInput}" Tag="Empty: everybody can join"
-                                             Text="{Binding JoinPassword, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Join password" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,12">
-                                    <TextBlock Text="Max players" Style="{StaticResource LabelText}" />
-                                    <TextBox Style="{StaticResource TextInput}" Text="{Binding MaxPlayersText, UpdateSourceTrigger=PropertyChanged}"
-                                             MaxLength="2" AutomationProperties.Name="Max players" />
-                                    <TextBlock Text="Takes effect on the next start or restart" Style="{StaticResource HintText}" Margin="0,4,0,0"
-                                               Visibility="{Binding IsMaxPlayersPending, Converter={StaticResource VisibleWhenTrue}}" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
-                                    <TextBlock Text="Fun round every (rounds)" Style="{StaticResource LabelText}" />
-                                    <TextBox Style="{StaticResource TextInput}" Text="{Binding FunRoundsEveryText, UpdateSourceTrigger=PropertyChanged}"
-                                             MaxLength="2" AutomationProperties.Name="Fun round every" IsEnabled="{Binding FunRoundsEnabled}" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="0">
-                                    <TextBlock Text="Hook speed" Style="{StaticResource LabelText}" />
-                                    <TextBox Style="{StaticResource TextInput}" Text="{Binding HookSpeedText, UpdateSourceTrigger=PropertyChanged}"
-                                             MaxLength="4" AutomationProperties.Name="Hook speed" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="2" VerticalAlignment="Bottom">
-                                    <CheckBox Style="{StaticResource AccentCheckBox}" IsChecked="{Binding FunRoundsEnabled}" Margin="0,0,0,10">
-                                        <TextBlock>Fun rounds in Classic Fun <Run Text="fun_rounds_enabled" FontFamily="{StaticResource MonoFont}"
-                                                   FontSize="{StaticResource FontSizeSmall}" Foreground="{StaticResource TextTertiary}" /></TextBlock>
-                                    </CheckBox>
-                                    <CheckBox Style="{StaticResource AccentCheckBox}" IsChecked="{Binding HookAdminOnly}">
-                                        <TextBlock>Hook for admins only <Run Text="fun_hook_admin_only" FontFamily="{StaticResource MonoFont}"
-                                                   FontSize="{StaticResource FontSizeSmall}" Foreground="{StaticResource TextTertiary}" /></TextBlock>
-                                    </CheckBox>
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
                     <!-- TV: an HLTV proxy for a projector, also part of the draft. -->
                     <Border Style="{StaticResource Card}" Margin="0,16,0,0" DataContext="{Binding Settings}">
                         <StackPanel>
@@ -340,8 +340,13 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <DockPanel Grid.Row="0" Margin="0,0,0,12">
-                        <TextBlock DockPanel.Dock="Right" Text="{Binding ConsoleInfo}" Style="{StaticResource HintText}" />
-                        <TextBlock Text="Console" Style="{StaticResource CardTitleText}" />
+                        <!-- Follow keeps the newest line in view; scrolling up to read turns it off. -->
+                        <ToggleButton x:Name="FollowToggle" DockPanel.Dock="Right" Content="Follow" Style="{StaticResource CardToggle}"
+                                      Height="{StaticResource SmallButtonHeight}" Margin="12,0,0,0" IsChecked="True"
+                                      Checked="OnFollowChecked" Unchecked="OnFollowUnchecked"
+                                      ToolTip="Keep the newest console line in view" />
+                        <TextBlock DockPanel.Dock="Right" Text="{Binding ConsoleInfo}" Style="{StaticResource HintText}" VerticalAlignment="Center" />
+                        <TextBlock Text="Console" Style="{StaticResource CardTitleText}" VerticalAlignment="Center" />
                     </DockPanel>
 
                     <Border Grid.Row="1" Background="{StaticResource ViewportBackground}" BorderBrush="{StaticResource ConsoleBorder}"

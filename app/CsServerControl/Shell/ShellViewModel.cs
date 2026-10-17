@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CsServerControl.Bots;
 using CsServerControl.Install;
 using CsServerControl.LiveMap;
+using CsServerControl.Maps;
+using CsServerControl.Options;
 using CsServerControl.Server;
 using CsServerControl.Services;
 using CsServerControl.Stats;
@@ -29,13 +31,16 @@ public sealed partial class ShellViewModel : ObservableObject {
     public const string BotsKey = "Bots";
     public const string StatsKey = "Stats";
     public const string InstallKey = "Install";
+    public const string MapsKey = "Maps";
+    public const string OptionsKey = "Options";
 
     private static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly DispatcherTimer _statusTimer;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsLiveMapSelected), nameof(IsServerSelected), nameof(IsBotsSelected), nameof(IsStatsSelected), nameof(IsInstallSelected))]
+    [NotifyPropertyChangedFor(nameof(IsLiveMapSelected), nameof(IsServerSelected), nameof(IsBotsSelected), nameof(IsStatsSelected), nameof(IsInstallSelected),
+        nameof(IsMapsSelected), nameof(IsOptionsSelected))]
     private IScreen _currentScreen;
 
     [ObservableProperty]
@@ -59,8 +64,17 @@ public sealed partial class ShellViewModel : ObservableObject {
         Stats = new StatsViewModel(connection);
         Install = new InstallViewModel(connection, dialogs);
         InfoBar = new ServerInfoBarViewModel(connection);
+        Maps = new MapsViewModel(connection, dialogs, PickOnServer, QueueMissingNavs, UpdateMapsOnInstall);
+        Options = new OptionsViewModel(connection, [
+            new OptionChoice(LiveMapKey, "Live Map"),
+            new OptionChoice(ServerKey, "Server"),
+            new OptionChoice(BotsKey, "Bots"),
+            new OptionChoice(MapsKey, "Maps"),
+            new OptionChoice(StatsKey, "Stats"),
+        ]);
 
-        _currentScreen = ScreenFor(connection.Settings.LastScreen);
+        string startScreen = connection.Settings.StartScreen;
+        _currentScreen = ScreenFor(string.IsNullOrEmpty(startScreen) ? connection.Settings.LastScreen : startScreen);
         _currentScreen.OnShown();
 
         _statusTimer = new DispatcherTimer(StatusRefreshInterval, DispatcherPriority.Background, (_, _) => RefreshStatus(), Dispatcher.CurrentDispatcher);
@@ -74,6 +88,8 @@ public sealed partial class ShellViewModel : ObservableObject {
     public BotsViewModel Bots { get; }
     public StatsViewModel Stats { get; }
     public InstallViewModel Install { get; }
+    public MapsViewModel Maps { get; }
+    public OptionsViewModel Options { get; }
     public ServerInfoBarViewModel InfoBar { get; }
 
     public ObservableCollection<string> StatusItems { get; } = [];
@@ -103,6 +119,16 @@ public sealed partial class ShellViewModel : ObservableObject {
         set => SelectIf(value, Install);
     }
 
+    public bool IsMapsSelected {
+        get => CurrentScreen == Maps;
+        set => SelectIf(value, Maps);
+    }
+
+    public bool IsOptionsSelected {
+        get => CurrentScreen == Options;
+        set => SelectIf(value, Options);
+    }
+
     public string CurrentScreenKey {
         get {
             if (CurrentScreen == Server) {
@@ -116,6 +142,12 @@ public sealed partial class ShellViewModel : ObservableObject {
             }
             if (CurrentScreen == Install) {
                 return InstallKey;
+            }
+            if (CurrentScreen == Maps) {
+                return MapsKey;
+            }
+            if (CurrentScreen == Options) {
+                return OptionsKey;
             }
             return LiveMapKey;
         }
@@ -161,6 +193,25 @@ public sealed partial class ShellViewModel : ObservableObject {
         RefreshStatus();
     }
 
+    /// <summary>The Maps screen's Pick: a draft on the Server screen, shown so Apply is in reach.</summary>
+    private bool PickOnServer(string modeId, string mapName) {
+        bool picked = Server.PickModeAndMap(modeId, mapName);
+        CurrentScreen = Server;
+        return picked;
+    }
+
+    /// <summary>Queued on the Bots screen, where Apply builds them like any other nav action.</summary>
+    private void QueueMissingNavs() {
+        CurrentScreen = Bots;
+        Bots.QueueAllMissingCommand.Execute(null);
+    }
+
+    /// <summary>The Install screen runs it, so its log is in view.</summary>
+    private Task UpdateMapsOnInstall() {
+        CurrentScreen = Install;
+        return Install.UpdateMaps();
+    }
+
     private void SelectIf(bool isSelected, IScreen screen) {
         if (isSelected) {
             CurrentScreen = screen;
@@ -179,6 +230,12 @@ public sealed partial class ShellViewModel : ObservableObject {
         }
         if (key == InstallKey) {
             return Install;
+        }
+        if (key == MapsKey) {
+            return Maps;
+        }
+        if (key == OptionsKey) {
+            return Options;
         }
         return LiveMap;
     }

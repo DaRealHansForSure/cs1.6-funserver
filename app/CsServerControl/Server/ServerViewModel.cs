@@ -236,6 +236,25 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
         await _dialogs.ShowAsync(details);
     }
 
+    /// <summary>
+    /// The Maps screen's "Pick": the same draft as clicking the mode tile and
+    /// the map row here, so Apply and Discard work as usual. False when the
+    /// mode has no tile or the map is not in its cycle.
+    /// </summary>
+    public bool PickModeAndMap(string modeId, string mapName) {
+        ModeTileViewModel? tile = ModeTiles.FirstOrDefault(candidate => candidate.Mode.Id == modeId);
+        if (tile == null) {
+            return false;
+        }
+        tile.IsPicked = true;
+        MapRowViewModel? row = Maps.FirstOrDefault(candidate => string.Equals(candidate.Name, mapName, StringComparison.OrdinalIgnoreCase));
+        if (row == null) {
+            return false;
+        }
+        row.IsPicked = true;
+        return true;
+    }
+
     [RelayCommand]
     private async Task SendCommand() {
         string command = CommandText.Trim();
@@ -397,7 +416,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
             "Other PCs can only join when Windows Firewall lets them in. Add inbound rules for UDP/TCP 27015, TCP 27080 and the TV on UDP 27020 now? Windows asks for administrator rights.",
             "Add rules");
         if (add) {
-            ServerProcess.AddFirewallRules();
+            await ServerProcess.AddFirewallRulesAsync();
         }
     }
 }
