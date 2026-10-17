@@ -91,7 +91,10 @@ everybody works like a wallhack, that is your call.
 Navigation files (maps\<map>.nav) are what the bots walk by. A missing one
 is built by zBot when a bot first joins that map. "Generate" on the Bots
 screen builds it right away in a hidden second server on 127.0.0.1:27016,
-without changing the map of the running game.
+without changing the map of the running game. "Generate all missing" queues
+every map without one; worth doing once before a LAN evening, it takes
+roughly a minute per map. The hidden server runs on an invisible desktop,
+so it never pops up or takes the focus from a game.
 
 The window talks to the server over RCON with a random password stored in
 %APPDATA%\CsServerControl\settings.json (and in server\cstrike\local.cfg,

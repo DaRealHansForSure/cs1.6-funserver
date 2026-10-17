@@ -162,7 +162,13 @@
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
                             <DockPanel Margin="0,0,0,12">
-                                <TextBlock DockPanel.Dock="Right" Text="zBot creates missing files on first load" Style="{StaticResource HintText}" />
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <TextBlock Text="zBot creates missing files on first load" Style="{StaticResource HintText}" Margin="0,0,12,0" />
+                                    <Button Style="{StaticResource SmallSecondaryButton}" Command="{Binding QueueAllMissingCommand}"
+                                            Content="{Binding MissingNavCount}" ContentStringFormat="Generate all missing ({0})"
+                                            AutomationProperties.Name="Generate all missing navigation files"
+                                            ToolTip="Queues every map without a navigation file; Apply builds them in the hidden helper server" />
+                                </StackPanel>
                                 <TextBlock Text="Navigation per map" Style="{StaticResource CardTitleText}" />
                             </DockPanel>
                             <Border BorderBrush="{StaticResource CardBorder}" BorderThickness="{StaticResource BorderBottomOne}" Padding="4,0,0,6">

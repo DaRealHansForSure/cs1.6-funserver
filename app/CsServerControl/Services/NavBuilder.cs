@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 
 namespace CsServerControl.Services;
 
@@ -19,7 +18,6 @@ public sealed class NavBuilder {
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan StableFor = TimeSpan.FromSeconds(2);
 
-    private const int HideWindow = 0;
 
     private readonly PackagePaths _paths;
     private readonly SemaphoreSlim _oneAtATime = new(1, 1);
@@ -47,22 +45,15 @@ public sealed class NavBuilder {
             }
             DateTime startedAt = DateTime.UtcNow;
 
-            helper = Process.Start(new ProcessStartInfo {
-                FileName = _paths.HldsExe,
-                WorkingDirectory = _paths.ServerDir,
-                Arguments = string.Join(' ',
+            // On an invisible desktop: its console window must never take the focus.
+            helper = HiddenDesktopLauncher.Start(_paths.HldsExe,
+                string.Join(' ',
                     "-console -game cstrike",
                     $"-port {HelperPort} +ip 127.0.0.1 +maxplayers 2 +sv_lan 1",
                     "+servercfgfile navbuild.cfg",
                     "+localinfo mm_pluginsfile addons/metamod/plugins_navbuild.ini",
                     $"+map {mapName}"),
-                WindowStyle = ProcessWindowStyle.Minimized,
-                UseShellExecute = true,
-            });
-            if (helper == null) {
-                return false;
-            }
-            _ = HideConsoleWindowAsync(helper);
+                _paths.ServerDir);
 
             return await WaitForNavFileAsync(navFile, startedAt, helper, cancellation);
         } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or Win32Exception) {
@@ -103,18 +94,6 @@ public sealed class NavBuilder {
         return false;
     }
 
-    /// <summary>hlds.exe -console opens its own console window; nobody needs to see the helper's.</summary>
-    private static async Task HideConsoleWindowAsync(Process helper) {
-        for (int attempt = 0; attempt < 40 && !helper.HasExited; attempt++) {
-            await Task.Delay(100);
-            helper.Refresh();
-            if (helper.MainWindowHandle != IntPtr.Zero) {
-                ShowWindow(helper.MainWindowHandle, HideWindow);
-                return;
-            }
-        }
-    }
-
     private static void TryKill(Process process) {
         try {
             if (!process.HasExited) {
@@ -125,7 +104,4 @@ public sealed class NavBuilder {
         }
         process.Dispose();
     }
-
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindow(IntPtr window, int command);
 }

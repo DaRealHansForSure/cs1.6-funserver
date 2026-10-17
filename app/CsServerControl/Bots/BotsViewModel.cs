@@ -432,6 +432,21 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
         UpdatePendingCount();
     }
 
+    /// <summary>
+    /// Queues every map without a nav file. Without one, the first round on
+    /// that map starts while zBot is still learning it, so building them
+    /// before the LAN evening is worth it. Runs on Apply like every row.
+    /// </summary>
+    [RelayCommand]
+    private void QueueAllMissing() {
+        foreach (NavRowViewModel row in NavRows.Where(row => row.State == NavState.Missing)) {
+            row.State = NavState.Queued;
+        }
+        UpdatePendingCount();
+    }
+
+    public int MissingNavCount => NavRows.Count(row => row.State == NavState.Missing);
+
     [RelayCommand]
     private void ToggleNavAction(NavRowViewModel? row) {
         if (row == null || row.State == NavState.Generating) {
@@ -447,6 +462,7 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
 
     private void UpdatePendingCount() {
         PendingActionCount = _pendingKicks.Count + NavRows.Count(row => row.State == NavState.Queued);
+        OnPropertyChanged(nameof(MissingNavCount));
     }
 
     private async Task<bool> ApplySettingsAsync() {
