@@ -85,13 +85,16 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
     private int _playerCount;
 
     [ObservableProperty]
-    private int _maxPlayers = ServerProcess.MaxPlayers;
+    private int _maxPlayers = ServerProcess.DefaultMaxPlayers;
 
     [ObservableProperty]
     private int _botCount;
 
     [ObservableProperty]
     private string? _serverName;
+
+    [ObservableProperty]
+    private bool _isTvRunning;
 
     /// <summary>"12:34" from AMXX's amx_timeleft, null without a time limit.</summary>
     [ObservableProperty]
@@ -187,7 +190,7 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
 
         IsBusy = true;
         try {
-            Process.Start(modeId, startMap, LanAddress, Settings.RconPassword);
+            Process.Start(modeId, startMap, Settings.MaxPlayers, LanAddress, Settings.RconPassword);
             Rcon.Password = Settings.RconPassword;
             Rcon.Reset();
             ActiveModeId = modeId;
@@ -286,11 +289,13 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
         try {
             bool wasRunning = IsRunning;
             IsRunning = Process.IsRunning;
+            IsTvRunning = Process.IsTvRunning;
             StartedAt = IsRunning ? Process.StartedAt : null;
 
             if (!IsRunning) {
                 if (wasRunning) {
                     Process.StopFastDownload();
+                    Process.StopTv();
                     Rcon.Reset();
                 }
                 PlayerCount = 0;

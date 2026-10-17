@@ -350,6 +350,48 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         }
     }
 
+    // Colors amx_glow knows (fun_admincmds.sma).
+    public IReadOnlyList<string> GlowColors { get; } = ["red", "green", "blue", "yellow", "pink", "white"];
+
+    [ObservableProperty]
+    private string _glowColor = "pink";
+
+    // The player fun commands run at once: they act on the game in progress.
+    [RelayCommand]
+    private Task Glow() {
+        return RunOnSelected($"amx_glow #{{0}} {GlowColor}");
+    }
+
+    [RelayCommand]
+    private Task Rocket() {
+        return RunOnSelected("amx_rocket #{0}");
+    }
+
+    [RelayCommand]
+    private Task Godmode() {
+        return RunOnSelected("amx_godmode #{0} 1");
+    }
+
+    [RelayCommand]
+    private Task Noclip() {
+        return RunOnSelected("amx_noclip #{0} 1");
+    }
+
+    /// <summary>Glow, godmode and noclip off again in one go.</summary>
+    [RelayCommand]
+    private async Task ResetFun() {
+        await RunOnSelected("amx_glow #{0} off");
+        await RunOnSelected("amx_godmode #{0} 0");
+        await RunOnSelected("amx_noclip #{0} 0");
+    }
+
+    private async Task RunOnSelected(string commandFormat) {
+        if (SelectedPlayer == null) {
+            return;
+        }
+        await _connection.RunAsync(string.Format(System.Globalization.CultureInfo.InvariantCulture, commandFormat, SelectedPlayer.UserId));
+    }
+
     [RelayCommand]
     private async Task Slay() {
         if (SelectedPlayer == null) {

@@ -5,6 +5,7 @@ using CsServerControl.Bots;
 using CsServerControl.LiveMap;
 using CsServerControl.Server;
 using CsServerControl.Services;
+using CsServerControl.Stats;
 
 namespace CsServerControl.Shell;
 
@@ -25,13 +26,14 @@ public sealed partial class ShellViewModel : ObservableObject {
     public const string LiveMapKey = "LiveMap";
     public const string ServerKey = "Server";
     public const string BotsKey = "Bots";
+    public const string StatsKey = "Stats";
 
     private static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly DispatcherTimer _statusTimer;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsLiveMapSelected), nameof(IsServerSelected), nameof(IsBotsSelected))]
+    [NotifyPropertyChangedFor(nameof(IsLiveMapSelected), nameof(IsServerSelected), nameof(IsBotsSelected), nameof(IsStatsSelected))]
     private IScreen _currentScreen;
 
     [ObservableProperty]
@@ -52,6 +54,7 @@ public sealed partial class ShellViewModel : ObservableObject {
         LiveMap = new LiveMapViewModel(connection, dialogs, killIcons);
         Server = new ServerViewModel(connection, dialogs);
         Bots = new BotsViewModel(connection);
+        Stats = new StatsViewModel(connection);
         InfoBar = new ServerInfoBarViewModel(connection);
 
         _currentScreen = ScreenFor(connection.Settings.LastScreen);
@@ -66,6 +69,7 @@ public sealed partial class ShellViewModel : ObservableObject {
     public LiveMapViewModel LiveMap { get; }
     public ServerViewModel Server { get; }
     public BotsViewModel Bots { get; }
+    public StatsViewModel Stats { get; }
     public ServerInfoBarViewModel InfoBar { get; }
 
     public ObservableCollection<string> StatusItems { get; } = [];
@@ -85,6 +89,11 @@ public sealed partial class ShellViewModel : ObservableObject {
         set => SelectIf(value, Bots);
     }
 
+    public bool IsStatsSelected {
+        get => CurrentScreen == Stats;
+        set => SelectIf(value, Stats);
+    }
+
     public string CurrentScreenKey {
         get {
             if (CurrentScreen == Server) {
@@ -92,6 +101,9 @@ public sealed partial class ShellViewModel : ObservableObject {
             }
             if (CurrentScreen == Bots) {
                 return BotsKey;
+            }
+            if (CurrentScreen == Stats) {
+                return StatsKey;
             }
             return LiveMapKey;
         }
@@ -116,6 +128,9 @@ public sealed partial class ShellViewModel : ObservableObject {
         }
         if (key == BotsKey) {
             return Bots;
+        }
+        if (key == StatsKey) {
+            return Stats;
         }
         return LiveMap;
     }

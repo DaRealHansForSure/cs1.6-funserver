@@ -179,4 +179,5 @@
     <GridLength x:Key="RailColumnWidth">80</GridLength>
     <GridLength x:Key="CardGapColumn">16</GridLength>
     <GridLength x:Key="LiveGapColumn">12</GridLength>
+    <GridLength x:Key="CardGapRow">16</GridLength>
 </ResourceDictionary>

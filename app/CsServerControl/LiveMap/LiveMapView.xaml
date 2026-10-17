@@ -290,6 +290,21 @@
                                     <Button Content="Slay" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Command="{Binding SlayCommand}" />
                                     <Button Content="Kick" Style="{StaticResource SecondaryButton}" Command="{Binding KickCommand}" />
                                 </StackPanel>
+
+                                <!-- Fun commands, at once like Slay. -->
+                                <TextBlock Text="Fun" Style="{StaticResource LabelText}" Margin="0,14,0,6" />
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <ComboBox Style="{StaticResource Select}" Width="110" ItemsSource="{Binding GlowColors}"
+                                              SelectedItem="{Binding GlowColor}" AutomationProperties.Name="Glow color" />
+                                    <Button Content="Glow" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" Command="{Binding GlowCommand}" />
+                                </StackPanel>
+                                <WrapPanel>
+                                    <Button Content="Rocket" Style="{StaticResource SmallSecondaryButton}" Margin="0,0,6,6" Command="{Binding RocketCommand}" />
+                                    <Button Content="Godmode" Style="{StaticResource SmallSecondaryButton}" Margin="0,0,6,6" Command="{Binding GodmodeCommand}" />
+                                    <Button Content="Noclip" Style="{StaticResource SmallSecondaryButton}" Margin="0,0,6,6" Command="{Binding NoclipCommand}" />
+                                    <Button Content="Reset" Style="{StaticResource SmallSecondaryButton}" Margin="0,0,6,6" Command="{Binding ResetFunCommand}"
+                                            ToolTip="Glow, godmode and noclip off" />
+                                </WrapPanel>
                             </StackPanel>
                         </Grid>
                     </Border>

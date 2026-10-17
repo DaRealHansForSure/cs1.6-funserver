@@ -294,7 +294,7 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
     public int Quota {
         get {
             if (int.TryParse(QuotaText, out int quota)) {
-                return Math.Clamp(quota, 0, ServerProcess.MaxPlayers);
+                return Math.Clamp(quota, 0, ServerProcess.MaxPlayersLimit);
             }
             return 0;
         }

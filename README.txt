@@ -55,10 +55,30 @@ time left, LAN address and uptime.
              opens its preview, a top-down overview and stats (spawns,
              size, objective, bot navigation, how often it was played,
              kills, best player). Console with RCON command input.
+             Round (runs at once): force the next fun round, restart the
+             round, hook on/off for this map, a message to everybody.
+             Settings (draft, saved in server\cstrike\local.cfg on Apply):
+             server name, join password, max players (from the next
+             start), fun rounds on/off and how often, hook speed, hook for
+             admins only. TV: see below.
   Bots       zBot settings: difficulty, fill count, teams, weapons, radio
              and chat. Everything is a draft until Apply, also kicking a
              bot, adding bots and building navigation files; Discard drops
              it all. Settings are saved in modes\base.cfg.
+  Stats      leaderboard of this map or the last 12 hours (kills, deaths,
+             K/D, knife, HE, best weapon), the maps played tonight with
+             mode and duration, and how far the current map is.
+
+The player card on the Live Map also has the fun commands for the selected
+player: glow (pick a color), rocket, godmode, noclip, and Reset to switch
+glow, godmode and noclip off again. They run at once, like Slay.
+
+TV for a big screen: tick "Broadcast to a TV" on the Server screen and
+Apply. That starts an HLTV proxy. On the PC at the TV or projector start
+CS and type in the console
+  connect <server IP>:27020
+That PC watches as a spectator with the automatic camera, 10 seconds
+behind the game. The TV uses one player slot and stops with the server.
 
 The live map gets its data from the plugin fun_livemap on this PC only
 (UDP 127.0.0.1:27090, never on the LAN). Showing it on a projector for
@@ -75,10 +95,7 @@ so a server started with 2_START_SERVER.bat accepts the window too). The
 status is read with the normal server query, so the game logs do not fill
 up with RCON lines.
 
-Not in this window (use the console or the in-game menus instead): HLTV,
-the player fun commands (glow, rocket, godmode, noclip), the server name
-and join password settings. The Maps and Options entries in the left rail
-are placeholders for later.
+The Maps and Options entries in the left rail are placeholders for later.
 
 Map pictures: the installer downloads one screenshot per fun map from
 GameBanana into tools\previews\ (the ModId column of tools\maps.csv),

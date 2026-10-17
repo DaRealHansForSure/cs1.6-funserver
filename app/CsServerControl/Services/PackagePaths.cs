@@ -24,6 +24,8 @@ public sealed class PackagePaths {
     // -condebug writes into the engine folder, not into the mod folder.
     public string ConsoleLogFile => Path.Combine(ServerDir, "qconsole.log");
     public string LocalConfigFile => Path.Combine(CstrikeDir, "local.cfg");
+    public string GameLogsDir => Path.Combine(CstrikeDir, "logs");
+    public string AmxLogsDir => Path.Combine(CstrikeDir, "addons", "amxmodx", "logs");
     public string BotProfileFile => Path.Combine(CstrikeDir, "BotProfile.db");
     public string ServerBaseConfigFile => Path.Combine(CstrikeDir, "modes", "base.cfg");
     public string SourceBaseConfigFile => Path.Combine(RootDir, "server-files", "cstrike", "modes", "base.cfg");

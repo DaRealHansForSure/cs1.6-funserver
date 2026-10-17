@@ -5,6 +5,7 @@
         xmlns:livemap="clr-namespace:CsServerControl.LiveMap"
         xmlns:server="clr-namespace:CsServerControl.Server"
         xmlns:bots="clr-namespace:CsServerControl.Bots"
+        xmlns:stats="clr-namespace:CsServerControl.Stats"
         Title="CS 1.6 Server Control"
         Icon="/app.ico"
         MinWidth="1100" MinHeight="700" Width="1440" Height="900"
@@ -203,6 +204,9 @@
                     <RadioButton DockPanel.Dock="Top" Style="{StaticResource RailItem}" Content="Bots" GroupName="Rail"
                                  IsChecked="{Binding IsBotsSelected, Mode=TwoWay}"
                                  Tag="M 6 8 L 18 8 L 18 19 L 6 19 Z M 12 8 L 12 4.5 M 9.5 12.5 L 9.5 13.5 M 14.5 12.5 L 14.5 13.5 M 9.5 16 L 14.5 16 M 4 12 L 4 15 M 20 12 L 20 15" />
+                    <RadioButton DockPanel.Dock="Top" Style="{StaticResource RailItem}" Content="Stats" GroupName="Rail"
+                                 IsChecked="{Binding IsStatsSelected, Mode=TwoWay}"
+                                 Tag="M 4 20 L 20 20 M 6 20 L 6 13 M 10.5 20 L 10.5 7 M 15 20 L 15 10 M 19 20 L 19 4" />
                     <RadioButton DockPanel.Dock="Top" Style="{StaticResource RailItem}" Content="Maps" IsEnabled="False"
                                  GroupName="Rail" ToolTip="Coming later"
                                  Tag="M 12 4 L 20 8 L 12 12 L 4 8 Z M 4 12 L 12 16 L 20 12 M 4 16 L 12 20 L 20 16" />
@@ -250,6 +254,8 @@
                                    Visibility="{Binding DataContext.IsServerSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
                 <bots:BotsView x:Name="BotsScreen" DataContext="{Binding Bots}"
                                Visibility="{Binding DataContext.IsBotsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
+                <stats:StatsView x:Name="StatsScreen" DataContext="{Binding Stats}"
+                                 Visibility="{Binding DataContext.IsStatsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
                 </Grid>
             </Grid>
         </Grid>

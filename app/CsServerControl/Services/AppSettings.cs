@@ -23,6 +23,7 @@ public sealed class AppSettings {
     public bool ShowNames { get; set; } = true;
     public bool ShowTrails { get; set; } = true;
     public bool ShowNavMesh { get; set; }
+    public int MaxPlayers { get; set; } = ServerProcess.DefaultMaxPlayers;
     public bool FirewallAsked { get; set; }
 
     public static string SettingsFile => Path.Combine(

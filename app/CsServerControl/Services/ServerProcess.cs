@@ -4,7 +4,6 @@ using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Text.RegularExpressions;
 
 namespace CsServerControl.Services;
 
@@ -12,10 +11,16 @@ namespace CsServerControl.Services;
 /// Starts and stops hlds.exe and the fast download server, or attaches to an
 /// hlds.exe of this package that 2_START_SERVER.bat started.
 /// </summary>
-public sealed partial class ServerProcess {
+public sealed class ServerProcess {
     public const int GamePort = 27015;
     public const int FastDownloadPort = 27080;
-    public const int MaxPlayers = 20;
+    public const int DefaultMaxPlayers = 20;
+    public const int MaxPlayersLimit = 32;
+    public const int TvPort = 27020;
+
+    // Below 10 seconds HLTV turns its automatic camera director off, and on
+    // a LAN there is nobody to cheat with a longer delay.
+    private const int TvDelaySeconds = 10;
 
     private static readonly TimeSpan QuitTimeout = TimeSpan.FromSeconds(10);
 
@@ -23,10 +28,12 @@ public sealed partial class ServerProcess {
         ("CS16 LAN Server (UDP)", "UDP", GamePort),
         ("CS16 LAN Server (TCP)", "TCP", GamePort),
         ("CS16 LAN Fast-Download", "TCP", FastDownloadPort),
+        ("CS16 LAN TV (HLTV)", "UDP", TvPort),
     ];
 
     private readonly PackagePaths _paths;
     private Process? _fastDownload;
+    private Process? _tv;
 
     public ServerProcess(PackagePaths paths) {
         _paths = paths;
@@ -74,7 +81,7 @@ public sealed partial class ServerProcess {
         return anyAddress ?? IPAddress.Loopback;
     }
 
-    public void Start(string modeId, string startMap, IPAddress lanAddress, string rconPassword) {
+    public void Start(string modeId, string startMap, int maxPlayers, IPAddress lanAddress, string rconPassword) {
         if (!_paths.IsServerInstalled) {
             throw new InvalidOperationException("The server is not installed yet. Run 1_INSTALL.bat first.");
         }
@@ -95,7 +102,7 @@ public sealed partial class ServerProcess {
             "-console -condebug -game cstrike",
             $"-port {GamePort}",
             $"+ip {lanAddress}",
-            $"+maxplayers {MaxPlayers}",
+            $"+maxplayers {maxPlayers}",
             "+sv_lan 1",
             // The app polls status every 2 s; without this each poll lands in the console log.
             "+sv_rcon_condebug 0",
@@ -126,7 +133,45 @@ public sealed partial class ServerProcess {
             }
         }
         StopFastDownload();
+        StopTv();
     }
+
+    /// <summary>
+    /// The HLTV proxy for a TV or projector: it joins the game server as one
+    /// spectator slot, and the TV PC connects to it on port 27020.
+    /// </summary>
+    public void StartTv(IPAddress lanAddress) {
+        if (IsTvRunning) {
+            return;
+        }
+
+        string hltvExe = Path.Combine(_paths.ServerDir, "hltv.exe");
+        if (!File.Exists(hltvExe)) {
+            throw new InvalidOperationException("hltv.exe is missing. Run 1_INSTALL.bat to repair the server.");
+        }
+
+        _tv = Process.Start(new ProcessStartInfo {
+            FileName = hltvExe,
+            Arguments = string.Join(' ',
+                $"-port {TvPort}",
+                $"+connect {lanAddress}:{GamePort}",
+                $"+delay {TvDelaySeconds}",
+                "+maxrate 10000",
+                "+name LAN-TV"),
+            WorkingDirectory = _paths.ServerDir,
+            UseShellExecute = true,
+            WindowStyle = ProcessWindowStyle.Minimized,
+        });
+    }
+
+    public void StopTv() {
+        if (_tv != null) {
+            TryKill(_tv);
+            _tv = null;
+        }
+    }
+
+    public bool IsTvRunning => _tv != null && !_tv.HasExited;
 
     public void StopFastDownload() {
         if (_fastDownload != null) {
@@ -195,32 +240,14 @@ public sealed partial class ServerProcess {
     /// same also lets a server started by 2_START_SERVER.bat accept this app.
     /// </summary>
     public void WriteLocalConfigPassword(string rconPassword) {
-        string passwordLine = $"rcon_password \"{rconPassword}\"";
-        List<string> lines = File.Exists(_paths.LocalConfigFile)
-            ? File.ReadAllLines(_paths.LocalConfigFile).ToList()
-            : ["// Created by CS 1.6 Server Control. Local settings of this PC, never overwritten by the installer."];
-
-        int index = lines.FindIndex(line => RconPasswordLine().IsMatch(line));
-        if (index >= 0) {
-            lines[index] = passwordLine;
-        } else {
-            lines.Add(passwordLine);
-        }
-        File.WriteAllLines(_paths.LocalConfigFile, lines);
+        var settings = new LocalSettings(_paths.LocalConfigFile);
+        settings.Set("rcon_password", rconPassword);
+        settings.Save();
     }
 
     /// <summary>The password in local.cfg, used by a server that 2_START_SERVER.bat started.</summary>
     public string? ReadLocalConfigPassword() {
-        if (!File.Exists(_paths.LocalConfigFile)) {
-            return null;
-        }
-        foreach (string line in File.ReadLines(_paths.LocalConfigFile)) {
-            Match match = RconPasswordValue().Match(line);
-            if (match.Success) {
-                return match.Groups["password"].Value;
-            }
-        }
-        return null;
+        return new LocalSettings(_paths.LocalConfigFile).Get("rcon_password");
     }
 
     private Process? FindHlds() {
@@ -246,10 +273,4 @@ public sealed partial class ServerProcess {
             // Already gone.
         }
     }
-
-    [GeneratedRegex(@"^\s*rcon_password\s")]
-    private static partial Regex RconPasswordLine();
-
-    [GeneratedRegex("^\\s*rcon_password\\s+\"(?<password>[^\"]*)\"")]
-    private static partial Regex RconPasswordValue();
 }

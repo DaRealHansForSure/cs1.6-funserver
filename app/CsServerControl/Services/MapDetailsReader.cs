@@ -119,7 +119,7 @@ public static partial class MapDetailsReader {
     }
 
     private static void AddPlayStats(PackagePaths paths, string mapName, List<MapStat> stats) {
-        string logsDir = Path.Combine(paths.CstrikeDir, "logs");
+        string logsDir = paths.GameLogsDir;
         if (!Directory.Exists(logsDir)) {
             stats.Add(new MapStat("Played", "No game logs yet"));
             return;
