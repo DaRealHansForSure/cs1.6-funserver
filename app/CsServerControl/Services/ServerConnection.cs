@@ -336,6 +336,7 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
     /// </summary>
     private async Task AttachSetupAsync() {
         _didAttachSetup = true;
+        Process.EnsureFastDownload();
         await QueryAsync("sv_rcon_condebug 0");
         if (ActiveModeId != null) {
             return;

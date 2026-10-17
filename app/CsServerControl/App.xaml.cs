@@ -7,10 +7,30 @@ using CsServerControl.Shell;
 namespace CsServerControl;
 
 public partial class App : Application {
+    // One window per PC: a second start (a .bat double-clicked while the
+    // window is open) brings the open window forward instead.
+    private const string WindowMutexName = "CsServerControl.Window";
+
     private ServerConnection? _connection;
+    private Mutex? _windowMutex;
 
     protected override void OnStartup(StartupEventArgs e) {
         base.OnStartup(e);
+        AppCommand command = AppCommand.Parse(e.Args);
+
+        if (!command.HasWindow) {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            _ = RunFastDownloadAsync(command);
+            return;
+        }
+
+        _windowMutex = new Mutex(initiallyOwned: true, WindowMutexName, out bool isFirstWindow);
+        if (!isFirstWindow) {
+            WindowActivator.ActivateOtherInstance();
+            Shutdown();
+            return;
+        }
+
         DispatcherUnhandledException += OnUnhandledException;
 
         PackagePaths paths = PackagePaths.Locate();
@@ -21,10 +41,40 @@ public partial class App : Application {
         var window = new MainWindow(shell, settings);
         MainWindow = window;
         window.Show();
+        shell.RunStartupCommand(command);
+    }
+
+    /// <summary>
+    /// The hidden download server mode: no window, serves until hlds.exe ends
+    /// (or forever without a process to watch), then the process exits.
+    /// </summary>
+    private async Task RunFastDownloadAsync(AppCommand command) {
+        using var stop = new CancellationTokenSource();
+        if (command.WatchProcessId != null) {
+            _ = StopWhenProcessEndsAsync(command.WatchProcessId.Value, stop);
+        }
+
+        try {
+            await new FastDownloadServer(command.Root!, command.Port).RunAsync(stop.Token);
+        } catch (System.Net.Sockets.SocketException) {
+            // The port is taken: another download server already runs.
+        }
+        Shutdown();
+    }
+
+    private static async Task StopWhenProcessEndsAsync(int processId, CancellationTokenSource stop) {
+        try {
+            using System.Diagnostics.Process process = System.Diagnostics.Process.GetProcessById(processId);
+            await process.WaitForExitAsync();
+        } catch (ArgumentException) {
+            // Already gone.
+        }
+        stop.Cancel();
     }
 
     protected override void OnExit(ExitEventArgs e) {
         _connection?.Dispose();
+        _windowMutex?.Dispose();
         base.OnExit(e);
     }
 

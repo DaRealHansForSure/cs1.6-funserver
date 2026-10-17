@@ -13,24 +13,26 @@ GETTING STARTED (3 STEPS)
    (do not run it directly from the Downloads folder).
 
 2. Double-click 1_INSTALL.bat.
-   - Downloads the official server via SteamCMD and all mods
-     (about 600 MB, needs internet once).
-   - At the end it asks for your player name and an admin password.
-   - Tip: right-click and choose "Run as administrator" to have the
-     firewall rules added automatically.
+   It opens 4_SERVER_CONTROL.exe on its Install screen and installs:
+   - the official server via SteamCMD and all mods
+     (about 600 MB, needs internet once),
+   - bots, fun plugins and the map pack.
+   It asks for your player name and an admin password for the admin menus.
 
-3. Double-click 2_START_SERVER.bat, pick a start mode, done.
-   The window shows the address, e.g.  connect 192.168.1.50:27015
-   The server shows up under "LAN" in everyone's game.
+3. Double-click 2_START_SERVER.bat (or just open 4_SERVER_CONTROL.exe and
+   press Start). The bar at the top shows the address, e.g.
+   192.168.1.50:27015. The server shows up under "LAN" in everyone's game.
 
-If Windows asks about the firewall on first start, click "Allow access"
-for private networks (for hlds.exe and for PowerShell).
+On the first start the window offers to add the Windows Firewall rules
+(Windows asks for administrator rights once). Without them, click "Allow
+access" for private networks when Windows asks about hlds.exe.
 
 Other players only need a normal CS 1.6 (Steam). Missing maps and sounds
 are downloaded quickly from the server automatically when they connect.
 
-Instead of step 3 you can also use the window: 4_SERVER_CONTROL.exe
-(see SERVER CONTROL WINDOW below).
+3_UPDATE_MAPS.bat updates only the maps (also the Install screen). Every
+.bat file only opens 4_SERVER_CONTROL.exe in the right place; everything
+runs inside that one program, nothing else needs to be installed.
 
 
 SERVER CONTROL WINDOW
@@ -369,13 +371,14 @@ Credits:
 CHANGING SETTINGS
 -----------------
 
-  Server name, password      server\cstrike\server.cfg
+  Server name, password      Server Control, Server screen, Settings
   Rules per mode             server\cstrike\modes\*.cfg
-  Number of bots             bot_quota (Server Control, Bots screen)
-  Max players, ports         top of tools\start-server.ps1
+  Number of bots             Server Control, Bots screen
+  Max players                Server Control, Server screen, Settings
   Hook for admins only       fun_hook_admin_only 1 in modes\base.cfg
 
-1_INSTALL.bat can be run again at any time (repair).
+1_INSTALL.bat (or Install or repair on the Install screen) can be run again
+at any time.
 Note: this copies the files from server-files again. So it is best to make
 your own changes directly in server-files\cstrike.
 
@@ -389,23 +392,20 @@ missing files through the game connection, which is extremely slow (a
 10 MB map can take minutes). With it, a player who does not have a map
 downloads it in seconds when joining or on a map change.
 
-When it runs: automatically. 2_START_SERVER.bat starts it in a minimized
-window titled "CS 1.6 Fast Download" and stops it again when the server
-stops. You never have to start it by hand. Leave that window open, closing
-it does not stop the game, but new players fall back to the slow download.
+When it runs: automatically, whenever the server runs. 4_SERVER_CONTROL.exe
+starts it as a second copy of itself without a window, and it ends by
+itself when the server stops. Closing the Server Control window does not
+stop it. You never have to start it by hand.
 
 What it shares: only files from server\cstrike\maps, sound, models,
 sprites, gfx, overviews and the map textures (.wad). Configs, plugins and
 the admin password are never served.
 
 Good to know:
-  - Windows asks once to allow it in the firewall, click "Allow access"
-    (TCP port 27080, 1_INSTALL.bat adds the rule when run as admin).
-  - The minimized window logs every downloaded file, handy to see that it
-    works.
-  - Run it by hand only for testing:
-      powershell -ExecutionPolicy Bypass -File tools\fastdl-server.ps1 -Root server\cstrike
-    then open http://<this PC's IP>:27080/maps/de_rats.bsp in a browser.
+  - It needs TCP port 27080 open in the firewall; the window offers to add
+    the rule on the first start.
+  - To check it: while the server runs, open
+    http://<this PC's IP>:27080/maps/de_rats.bsp in a browser.
 
 
 TROUBLESHOOTING

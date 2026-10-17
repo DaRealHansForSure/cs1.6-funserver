@@ -6,6 +6,7 @@
         xmlns:server="clr-namespace:CsServerControl.Server"
         xmlns:bots="clr-namespace:CsServerControl.Bots"
         xmlns:stats="clr-namespace:CsServerControl.Stats"
+        xmlns:install="clr-namespace:CsServerControl.Install"
         Title="CS 1.6 Server Control"
         Icon="/app.ico"
         MinWidth="1100" MinHeight="700" Width="1440" Height="900"
@@ -138,6 +139,28 @@
             </Border>
         </DataTemplate>
 
+        <!-- Admin account, asked once by the installer. -->
+        <DataTemplate DataType="{x:Type install:AdminAccountModal}">
+            <Border Style="{StaticResource Card}" Width="{StaticResource ConfirmWidth}">
+                <StackPanel>
+                    <TextBlock Text="Admin account" Style="{StaticResource CardTitleText}" Margin="0,0,0,10" />
+                    <TextBlock Text="Your player name and a password for the admin menus in game (amx_funmode, the fun menu)."
+                               Style="{StaticResource HintText}" Margin="0,0,0,12" />
+                    <TextBlock Text="Player name" Style="{StaticResource LabelText}" />
+                    <TextBox Style="{StaticResource TextInput}" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,10"
+                             AutomationProperties.Name="Player name" />
+                    <TextBlock Text="Password" Style="{StaticResource LabelText}" />
+                    <TextBox Style="{StaticResource TextInput}" Text="{Binding Password, UpdateSourceTrigger=PropertyChanged}"
+                             AutomationProperties.Name="Admin password" />
+                    <TextBlock Text="{Binding Error}" Style="{StaticResource HintText}" Foreground="{StaticResource Warning}" Margin="0,8,0,0" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                        <Button Content="Skip" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Command="{Binding CloseCommand}" />
+                        <Button Content="Save" Style="{StaticResource PrimaryButton}" Command="{Binding SaveCommand}" IsDefault="True" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+
         <DataTemplate DataType="{x:Type server:MapDetailsViewModel}">
             <server:MapDetailsView />
         </DataTemplate>
@@ -195,6 +218,9 @@
                     <RadioButton DockPanel.Dock="Bottom" Style="{StaticResource RailItem}" Content="Options" IsEnabled="False"
                                  GroupName="Rail" ToolTip="Coming later" Margin="0"
                                  Tag="M 12 9 A 3 3 0 1 0 12.001 9 Z M 12 3 L 12 5.5 M 12 18.5 L 12 21 M 3 12 L 5.5 12 M 18.5 12 L 21 12 M 5.6 5.6 L 7.4 7.4 M 16.6 16.6 L 18.4 18.4 M 5.6 18.4 L 7.4 16.6 M 16.6 7.4 L 18.4 5.6" />
+                    <RadioButton DockPanel.Dock="Bottom" Style="{StaticResource RailItem}" Content="Install" GroupName="Rail"
+                                 IsChecked="{Binding IsInstallSelected, Mode=TwoWay}"
+                                 Tag="M 12 3 L 12 15 M 7 10 L 12 15 L 17 10 M 4 19 L 20 19" />
                     <RadioButton DockPanel.Dock="Top" Style="{StaticResource RailItem}" Content="Live Map" GroupName="Rail"
                                  IsChecked="{Binding IsLiveMapSelected, Mode=TwoWay}"
                                  Tag="M 12 3 L 20 7.5 L 20 16.5 L 12 21 L 4 16.5 L 4 7.5 Z M 4 7.5 L 12 12 L 20 7.5 M 12 12 L 12 21" />
@@ -256,6 +282,8 @@
                                Visibility="{Binding DataContext.IsBotsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
                 <stats:StatsView x:Name="StatsScreen" DataContext="{Binding Stats}"
                                  Visibility="{Binding DataContext.IsStatsSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
+                <install:InstallView x:Name="InstallScreen" DataContext="{Binding Install}"
+                                     Visibility="{Binding DataContext.IsInstallSelected, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource VisibleWhenTrue}}" />
                 </Grid>
             </Grid>
         </Grid>

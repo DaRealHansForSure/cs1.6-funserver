@@ -20,7 +20,6 @@ public sealed class PackagePaths {
     public string OverviewsDir => Path.Combine(CstrikeDir, "overviews");
     public string PreviewsDir => Path.Combine(ToolsDir, "previews");
     public string HldsExe => Path.Combine(ServerDir, "hlds.exe");
-    public string FastDownloadScript => Path.Combine(ToolsDir, "fastdl-server.ps1");
     // -condebug writes into the engine folder, not into the mod folder.
     public string ConsoleLogFile => Path.Combine(ServerDir, "qconsole.log");
     public string LocalConfigFile => Path.Combine(CstrikeDir, "local.cfg");

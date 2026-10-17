@@ -83,7 +83,7 @@ public sealed class ServerProcess {
 
     public void Start(string modeId, string startMap, int maxPlayers, IPAddress lanAddress, string rconPassword) {
         if (!_paths.IsServerInstalled) {
-            throw new InvalidOperationException("The server is not installed yet. Run 1_INSTALL.bat first.");
+            throw new InvalidOperationException("The server is not installed yet. Run Install or repair on the Install screen first.");
         }
         if (IsRunning) {
             throw new InvalidOperationException("The server is already running.");
@@ -91,20 +91,13 @@ public sealed class ServerProcess {
 
         WriteLocalConfigPassword(rconPassword);
 
-        _fastDownload = Process.Start(new ProcessStartInfo {
-            FileName = "powershell.exe",
-            Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{_paths.FastDownloadScript}\" -Root \"{_paths.CstrikeDir}\" -Port {FastDownloadPort}",
-            WindowStyle = ProcessWindowStyle.Minimized,
-            UseShellExecute = true,
-        });
-
         string arguments = string.Join(' ',
             "-console -condebug -game cstrike",
             $"-port {GamePort}",
             $"+ip {lanAddress}",
             $"+maxplayers {maxPlayers}",
             "+sv_lan 1",
-            // The app polls status every 2 s; without this each poll lands in the console log.
+            // The engine echoes every RCON command into its console log; the app has its own.
             "+sv_rcon_condebug 0",
             $"+localinfo fun_mode {modeId}",
             $"+mapcyclefile mapcycle_{modeId}.txt",
@@ -112,13 +105,49 @@ public sealed class ServerProcess {
             $"+rcon_password {rconPassword}",
             $"+map {startMap}");
 
-        Process.Start(new ProcessStartInfo {
+        Process? hlds = Process.Start(new ProcessStartInfo {
             FileName = _paths.HldsExe,
             Arguments = arguments,
             WorkingDirectory = _paths.ServerDir,
             WindowStyle = ProcessWindowStyle.Minimized,
             UseShellExecute = true,
         });
+        if (hlds != null) {
+            StartFastDownload(hlds.Id);
+        }
+    }
+
+    /// <summary>
+    /// The fast download server is this same exe again, without a window. It
+    /// ends by itself when hlds.exe ends, so it neither dies with the window
+    /// nor outlives the game server.
+    /// </summary>
+    public void StartFastDownload(int hldsProcessId) {
+        string? exe = Environment.ProcessPath;
+        if (exe == null || IsFastDownloadRunning()) {
+            return;
+        }
+
+        _fastDownload = Process.Start(new ProcessStartInfo {
+            FileName = exe,
+            Arguments = $"--fastdl --root \"{_paths.CstrikeDir}\" --port {FastDownloadPort} --watch-pid {hldsProcessId}",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        });
+    }
+
+    /// <summary>For a server the window attaches to: starts the download server if nobody serves the port.</summary>
+    public void EnsureFastDownload() {
+        Process? hlds = FindHlds();
+        if (hlds != null) {
+            StartFastDownload(hlds.Id);
+        }
+    }
+
+    /// <summary>Another instance may already serve the port, e.g. after the window was reopened.</summary>
+    private static bool IsFastDownloadRunning() {
+        IPEndPoint[] listeners = System.Net.NetworkInformation.IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners();
+        return listeners.Any(listener => listener.Port == FastDownloadPort);
     }
 
     /// <summary>Waits for hlds.exe to end after "quit", then kills what is left.</summary>

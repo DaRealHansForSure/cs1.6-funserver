@@ -57,14 +57,14 @@ public partial class MainWindow : Window {
     }
 
     private bool IsInsideVisibleScreen(DependencyObject element) {
-        foreach (FrameworkElement screen in new FrameworkElement[] { LiveMapScreen, ServerScreen, BotsScreen, StatsScreen }) {
+        foreach (FrameworkElement screen in new FrameworkElement[] { LiveMapScreen, ServerScreen, BotsScreen, StatsScreen, InstallScreen }) {
             if (screen.IsVisible && screen.IsAncestorOf(element)) {
                 return true;
             }
         }
         // The rail, the title bar and the modal layer are always fine.
         return !LiveMapScreen.IsAncestorOf(element) && !ServerScreen.IsAncestorOf(element) && !BotsScreen.IsAncestorOf(element)
-            && !StatsScreen.IsAncestorOf(element);
+            && !StatsScreen.IsAncestorOf(element) && !InstallScreen.IsAncestorOf(element);
     }
 
     /// <summary>

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CsServerControl.Bots;
+using CsServerControl.Install;
 using CsServerControl.LiveMap;
 using CsServerControl.Server;
 using CsServerControl.Services;
@@ -27,13 +28,14 @@ public sealed partial class ShellViewModel : ObservableObject {
     public const string ServerKey = "Server";
     public const string BotsKey = "Bots";
     public const string StatsKey = "Stats";
+    public const string InstallKey = "Install";
 
     private static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly DispatcherTimer _statusTimer;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsLiveMapSelected), nameof(IsServerSelected), nameof(IsBotsSelected), nameof(IsStatsSelected))]
+    [NotifyPropertyChangedFor(nameof(IsLiveMapSelected), nameof(IsServerSelected), nameof(IsBotsSelected), nameof(IsStatsSelected), nameof(IsInstallSelected))]
     private IScreen _currentScreen;
 
     [ObservableProperty]
@@ -55,6 +57,7 @@ public sealed partial class ShellViewModel : ObservableObject {
         Server = new ServerViewModel(connection, dialogs);
         Bots = new BotsViewModel(connection);
         Stats = new StatsViewModel(connection);
+        Install = new InstallViewModel(connection, dialogs);
         InfoBar = new ServerInfoBarViewModel(connection);
 
         _currentScreen = ScreenFor(connection.Settings.LastScreen);
@@ -70,6 +73,7 @@ public sealed partial class ShellViewModel : ObservableObject {
     public ServerViewModel Server { get; }
     public BotsViewModel Bots { get; }
     public StatsViewModel Stats { get; }
+    public InstallViewModel Install { get; }
     public ServerInfoBarViewModel InfoBar { get; }
 
     public ObservableCollection<string> StatusItems { get; } = [];
@@ -94,6 +98,11 @@ public sealed partial class ShellViewModel : ObservableObject {
         set => SelectIf(value, Stats);
     }
 
+    public bool IsInstallSelected {
+        get => CurrentScreen == Install;
+        set => SelectIf(value, Install);
+    }
+
     public string CurrentScreenKey {
         get {
             if (CurrentScreen == Server) {
@@ -105,7 +114,43 @@ public sealed partial class ShellViewModel : ObservableObject {
             if (CurrentScreen == Stats) {
                 return StatsKey;
             }
+            if (CurrentScreen == Install) {
+                return InstallKey;
+            }
             return LiveMapKey;
+        }
+    }
+
+    /// <summary>
+    /// What a .bat file asked for: 1_INSTALL.bat installs, 3_UPDATE_MAPS.bat
+    /// updates the maps, 2_START_SERVER.bat starts the server. A package that
+    /// is not installed yet always opens on the Install screen.
+    /// </summary>
+    public void RunStartupCommand(AppCommand command) {
+        switch (command.Kind) {
+            case AppCommandKind.Install:
+                CurrentScreen = Install;
+                _ = Install.InstallServer();
+                return;
+            case AppCommandKind.UpdateMaps:
+                CurrentScreen = Install;
+                _ = Install.UpdateMaps();
+                return;
+            case AppCommandKind.Start:
+                if (!Connection.Paths.IsServerInstalled) {
+                    CurrentScreen = Install;
+                    return;
+                }
+                CurrentScreen = Server;
+                if (!Connection.IsRunning) {
+                    Server.StartCommand.Execute(null);
+                }
+                return;
+            default:
+                if (!Connection.Paths.IsServerInstalled) {
+                    CurrentScreen = Install;
+                }
+                return;
         }
     }
 
@@ -131,6 +176,9 @@ public sealed partial class ShellViewModel : ObservableObject {
         }
         if (key == StatsKey) {
             return Stats;
+        }
+        if (key == InstallKey) {
+            return Install;
         }
         return LiveMap;
     }

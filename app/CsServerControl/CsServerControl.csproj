@@ -33,6 +33,8 @@
     <!-- The .NET (Core) build of HelixToolkit.Wpf.SharpDX 2.x: same API and namespace,
          the HelixToolkit.Wpf.SharpDX package itself only ships a .NET Framework build. -->
     <PackageReference Include="HelixToolkit.SharpDX.Core.Wpf" Version="2.27.3" />
+    <!-- Reads the RAR and 7z map archives, which tar.exe in Windows mostly fails on. -->
+    <PackageReference Include="SharpCompress" Version="0.50.5" />
   </ItemGroup>
 
 </Project>

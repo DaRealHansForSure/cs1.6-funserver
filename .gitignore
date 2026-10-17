@@ -19,4 +19,5 @@ app/**/obj/
 app/publish/
 app/.artifacts/
 4_SERVER_CONTROL.exe
+release/
 tools/previews/

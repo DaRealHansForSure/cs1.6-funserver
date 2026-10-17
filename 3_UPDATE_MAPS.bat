@@ -1,5 +1,9 @@
 @echo off
-title CS 1.6 LAN Fun Server - Update maps
+rem Update maps: opens CS 1.6 Server Control, which does the rest in its window.
 cd /d "%~dp0"
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\install.ps1" -MapsOnly
-pause
+if not exist "%~dp04_SERVER_CONTROL.exe" (
+    echo 4_SERVER_CONTROL.exe is missing. Unpack the complete package again.
+    pause
+    exit /b 1
+)
+start "" "%~dp04_SERVER_CONTROL.exe" --update-maps

@@ -14,7 +14,7 @@ public static class BotConfigWriter {
         List<string> lines = File.Exists(configFile) ? File.ReadAllLines(configFile).ToList() : [];
         IReadOnlyList<string> updated = ReplaceBlock(lines, cvars);
         Directory.CreateDirectory(Path.GetDirectoryName(configFile)!);
-        // ASCII on purpose: the PowerShell 5.1 installer reads BOM-less files as ANSI.
+        // ASCII on purpose: the engine and the installer read configs byte by byte.
         File.WriteAllLines(configFile, updated, System.Text.Encoding.ASCII);
     }
 
