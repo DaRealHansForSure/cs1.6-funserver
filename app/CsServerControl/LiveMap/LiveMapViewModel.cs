@@ -40,6 +40,14 @@ public sealed partial class PlayerRowViewModel : ObservableObject {
     [ObservableProperty]
     private bool _isSelected;
 
+    /// <summary>The game's kill icon of the weapon in hand; null when dead or when the weapon has none.</summary>
+    [ObservableProperty]
+    private ImageSource? _weaponIcon;
+
+    /// <summary>The weapon as text where there is no icon (flashbang, smoke grenade, C4).</summary>
+    [ObservableProperty]
+    private string _weaponText = "";
+
     /// <summary>The player's glow shell, shown as a ring around the team dot.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasGlow), nameof(GlowColor))]
@@ -132,7 +140,7 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelection), nameof(SelectedName), nameof(SelectedTeam), nameof(SelectedTeamText),
-        nameof(SelectedHealthText), nameof(SelectedHealthPercent), nameof(SelectedWeaponText), nameof(SelectedPositionText),
+        nameof(SelectedHealthText), nameof(SelectedHealthPercent), nameof(SelectedWeaponText), nameof(SelectedWeaponIcon), nameof(SelectedPositionText),
         nameof(SelectedGlowText), nameof(SelectedHasGlow), nameof(SelectedGlowColor))]
     private PlayerRowViewModel? _selectedPlayer;
 
@@ -145,6 +153,10 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
 
     [ObservableProperty]
     private bool _showTrails;
+
+    /// <summary>The weapon icon in the label next to each player on the map.</summary>
+    [ObservableProperty]
+    private bool _showWeapons;
 
     /// <summary>Bullet paths from the plugin, fading out after a moment.</summary>
     [ObservableProperty]
@@ -187,6 +199,7 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         _showNames = connection.Settings.ShowNames;
         _showTrails = connection.Settings.ShowTrails;
         _showShots = connection.Settings.ShowShots;
+        _showWeapons = connection.Settings.ShowWeapons;
         _showNavMesh = connection.Settings.ShowNavMesh;
 
         Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
@@ -247,6 +260,13 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
 
     public string SelectedHealthText => SelectedPlayer == null ? "" : $"{(SelectedPlayer.IsAlive ? SelectedPlayer.Health : 0)} HP";
     public double SelectedHealthPercent => SelectedPlayer == null || !SelectedPlayer.IsAlive ? 0 : Math.Clamp(SelectedPlayer.Health, 0, 100);
+
+    public ImageSource? SelectedWeaponIcon => SelectedPlayer?.WeaponIcon;
+
+    /// <summary>For the labels on the map; the icons are cut from the sprite sheet once and then cached.</summary>
+    public ImageSource? WeaponIconFor(string weapon) {
+        return _killIcons.ForWeapon(weapon);
+    }
 
     public string SelectedWeaponText {
         get {
@@ -515,6 +535,11 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         _connection.Settings.Save();
     }
 
+    partial void OnShowWeaponsChanged(bool value) {
+        _connection.Settings.ShowWeapons = value;
+        _connection.Settings.Save();
+    }
+
     partial void OnShowShotsChanged(bool value) {
         _connection.Settings.ShowShots = value;
         _connection.Settings.Save();
@@ -585,6 +610,9 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
                 Players.Insert(Math.Min(index, Players.Count), row);
             }
             row.Update(player);
+            ImageSource? icon = player.IsAlive ? _killIcons.ForWeapon(player.Weapon) : null;
+            row.WeaponIcon = icon;
+            row.WeaponText = player.IsAlive && icon == null ? WeaponNames.Display(player.Weapon) : "";
 
             int currentIndex = Players.IndexOf(row);
             if (currentIndex != index) {
@@ -633,6 +661,7 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         OnPropertyChanged(nameof(SelectedHealthText));
         OnPropertyChanged(nameof(SelectedHealthPercent));
         OnPropertyChanged(nameof(SelectedWeaponText));
+        OnPropertyChanged(nameof(SelectedWeaponIcon));
         OnPropertyChanged(nameof(SelectedPositionText));
         OnPropertyChanged(nameof(SelectedGlowText));
         OnPropertyChanged(nameof(SelectedHasGlow));

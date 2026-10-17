@@ -37,6 +37,10 @@ public sealed partial class ModeTileViewModel : ObservableObject {
 public sealed partial class MapRowViewModel : ObservableObject {
     private readonly Action<MapRowViewModel> _onPicked;
 
+    /// <summary>False while the map search does not match; the row stays in the list for the draft.</summary>
+    [ObservableProperty]
+    private bool _isShown = true;
+
     [ObservableProperty]
     private bool _isPicked;
 
@@ -100,6 +104,9 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
 
     [ObservableProperty]
     private string _commandText = "";
+
+    [ObservableProperty]
+    private string _mapSearchText = "";
 
     public ServerViewModel(ServerConnection connection, IDialogService dialogs) {
         _connection = connection;
@@ -344,6 +351,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
                 Maps.Add(new MapRowViewModel(map, _thumbnails.Get(map), OnMapPicked));
             }
 
+            ApplyMapSearch();
             PickedMap = null;
             MapRowViewModel? preferred = Maps.FirstOrDefault(row => string.Equals(row.Name, preferredMap, StringComparison.OrdinalIgnoreCase));
             MapRowViewModel? first = preferred ?? Maps.FirstOrDefault();
@@ -353,6 +361,17 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
             UpdateMapMarkers();
         } finally {
             _isSyncing = wasSyncing;
+        }
+    }
+
+    partial void OnMapSearchTextChanged(string value) {
+        ApplyMapSearch();
+    }
+
+    private void ApplyMapSearch() {
+        string search = MapSearchText.Trim();
+        foreach (MapRowViewModel row in Maps) {
+            row.IsShown = search.Length == 0 || row.Name.Contains(search, StringComparison.OrdinalIgnoreCase);
         }
     }
 

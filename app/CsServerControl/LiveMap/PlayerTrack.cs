@@ -14,7 +14,8 @@ public sealed record PlayerRenderState(
     bool IsHooking,
     Vector3 HookPoint,
     IReadOnlyList<Vector3> Trail,
-    PlayerGlow? Glow);
+    PlayerGlow? Glow,
+    string Weapon = "");
 
 /// <summary>
 /// The movement of one player between feed packets: positions are blended
@@ -79,7 +80,8 @@ public sealed class PlayerTrack {
             Latest.IsHooking,
             Latest.HookPoint,
             trail,
-            Latest.Glow);
+            Latest.Glow,
+            Latest.IsAlive ? Latest.Weapon : "");
     }
 
     private Vector3 OriginAt(DateTime now) {

@@ -35,7 +35,8 @@ public enum MarketSort {
 public static class GameBananaMarket {
     public const int GameId = 4254;
     public const int MapsCategoryId = 5474;
-    public const int PageSize = 24;
+    // The most GameBanana sends per request.
+    public const int PageSize = 50;
 
     private const string ApiUrl = "https://gamebanana.com/apiv11";
 

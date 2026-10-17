@@ -368,6 +368,7 @@ public partial class LiveMapView : UserControl {
     private void UpdateNameLabels(IReadOnlyList<PlayerRenderState> players, Matrix viewProjection) {
         var seen = new HashSet<int>();
         bool showNames = _viewModel != null && _viewModel.ShowNames;
+        bool showWeapons = _viewModel != null && _viewModel.ShowWeapons;
 
         foreach (PlayerRenderState player in players) {
             seen.Add(player.UserId);
@@ -378,10 +379,19 @@ public partial class LiveMapView : UserControl {
             if (label.Text.Text != player.Name) {
                 label.Text.Text = player.Name;
             }
+            label.Text.Visibility = showNames ? Visibility.Visible : Visibility.Collapsed;
+            if (label.Weapon != player.Weapon) {
+                label.Weapon = player.Weapon;
+                label.Icon.Source = _viewModel?.WeaponIconFor(player.Weapon);
+            }
+            bool hasIcon = showWeapons && label.Icon.Source != null;
+            label.Icon.Visibility = hasIcon ? Visibility.Visible : Visibility.Collapsed;
+            // A gap between icon and name only when both are there.
+            label.Icon.Margin = showNames ? new Thickness(0, 0, 4, 0) : new Thickness(0);
 
             Vector3 head = PlayerSceneBuilder.ToVector(player.Origin) + new Vector3(0, 0, LiveMapViewModel.HeadOffset);
             Point? screen = Project(head, viewProjection);
-            bool visible = showNames && player.IsAlive && screen != null;
+            bool visible = (showNames || hasIcon) && player.IsAlive && screen != null;
             label.Box.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
             if (visible) {
                 // Up and to the right of the marker, like a callout.
@@ -401,14 +411,23 @@ public partial class LiveMapView : UserControl {
             FontSize = (double)FindResource("FontSizeCaption"),
             Foreground = (Brush)FindResource("TextPrimary"),
         };
+        var icon = new Image {
+            Height = (double)FindResource("WeaponIconHeight"),
+            Stretch = Stretch.Uniform,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        RenderOptions.SetBitmapScalingMode(icon, BitmapScalingMode.NearestNeighbor);
+        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        content.Children.Add(icon);
+        content.Children.Add(text);
         var box = new Border {
             Background = (Brush)FindResource("ViewportLabelBackground"),
             Padding = new Thickness(4, 1, 4, 1),
-            Child = text,
+            Child = content,
             IsHitTestVisible = false,
         };
         LabelLayer.Children.Add(box);
-        return new NameLabel(box, text);
+        return new NameLabel(box, text, icon);
     }
 
     /// <summary>Screen position of a world point, null when it is behind the camera.</summary>
@@ -625,5 +644,8 @@ public partial class LiveMapView : UserControl {
         return view * projection;
     }
 
-    private sealed record NameLabel(Border Box, TextBlock Text);
+    /// <summary>Weapon remembers what the icon shows, so the bitmap is only swapped on a weapon change.</summary>
+    private sealed record NameLabel(Border Box, TextBlock Text, Image Icon) {
+        public string? Weapon { get; set; }
+    }
 }

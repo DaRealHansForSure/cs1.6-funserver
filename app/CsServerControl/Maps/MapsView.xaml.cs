@@ -19,6 +19,19 @@ public partial class MapsView : UserControl {
         }
     }
 
+    // About two rows of cards before the end, so the next page is there before the user gets to it.
+    private const double LoadMoreDistance = 600;
+
+    private void OnMarketScrolled(object sender, ScrollChangedEventArgs e) {
+        if (DataContext is not MapsViewModel viewModel || !viewModel.IsMarketTab) {
+            return;
+        }
+        bool isNearEnd = MarketScroll.ScrollableHeight - MarketScroll.VerticalOffset < LoadMoreDistance;
+        if (isNearEnd && viewModel.Market.CanLoadMore) {
+            _ = viewModel.Market.LoadMore();
+        }
+    }
+
     private static ScrollViewer? FindScrollViewer(DependencyObject parent) {
         for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++) {
             DependencyObject child = VisualTreeHelper.GetChild(parent, index);

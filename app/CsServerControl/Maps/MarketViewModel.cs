@@ -78,11 +78,17 @@ public sealed record MarketSortChoice(MarketSort Sort, string Label);
 public sealed partial class MarketViewModel : ObservableObject {
     private static readonly TimeSpan SearchDelay = TimeSpan.FromMilliseconds(500);
 
+    // With installed maps hidden, pages keep loading until about this many
+    // cards show (or a few pages were tried), so the view never looks empty.
+    private const int FillTarget = 30;
+    private const int MaxFillPages = 6;
+
     private readonly ServerConnection _connection;
     private readonly IDialogService _dialogs;
     private readonly InstallViewModel _install;
     private readonly Func<Task> _afterMapsChanged;
     private readonly DispatcherTimer _searchTimer;
+    private readonly List<MarketRowViewModel> _loadedRows = [];
     private bool _hasLoadedCategories;
     private bool _hasSearched;
     private int _searchVersion;
@@ -97,6 +103,10 @@ public sealed partial class MarketViewModel : ObservableObject {
 
     [ObservableProperty]
     private string _searchText = "";
+
+    /// <summary>Hides maps that are already on the server, so the market shows only new ones.</summary>
+    [ObservableProperty]
+    private bool _hideInstalled;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanLoadMore))]
@@ -113,6 +123,7 @@ public sealed partial class MarketViewModel : ObservableObject {
         Categories.Add(new MarketCategoryChoice(null, "All categories"));
         _selectedCategory = Categories[0];
         _selectedSort = Sorts[0];
+        _hideInstalled = connection.Settings.MarketHidesInstalled;
         _searchTimer = new DispatcherTimer(SearchDelay, DispatcherPriority.Background, (_, _) => {
             _searchTimer!.Stop();
             _ = SearchAsync();
@@ -132,7 +143,7 @@ public sealed partial class MarketViewModel : ObservableObject {
         new(MarketSort.RecentlyUpdated, "Recently updated"),
     ];
 
-    public bool CanLoadMore => !IsLoading && Rows.Count < _totalCount;
+    public bool CanLoadMore => !IsLoading && _loadedRows.Count < _totalCount;
     public bool CanChangeMaps => !_install.IsBusy && _connection.Paths.IsServerInstalled;
 
     /// <summary>The first time the tab opens: the categories and the most downloaded maps.</summary>
@@ -149,9 +160,17 @@ public sealed partial class MarketViewModel : ObservableObject {
     /// <summary>After an update, install or remove elsewhere: which cards say Installed.</summary>
     public void RefreshInstalledState() {
         (HashSet<string> installedModIds, HashSet<string> marketModIds) = ReadInstalledModIds();
-        foreach (MarketRowViewModel row in Rows) {
+        foreach (MarketRowViewModel row in _loadedRows) {
             ApplyInstalledState(row, installedModIds, marketModIds);
         }
+        ShowRows();
+    }
+
+    partial void OnHideInstalledChanged(bool value) {
+        _connection.Settings.MarketHidesInstalled = value;
+        _connection.Settings.Save();
+        ShowRows();
+        _ = FillAsync(_searchVersion);
     }
 
     partial void OnSearchTextChanged(string value) {
@@ -177,8 +196,9 @@ public sealed partial class MarketViewModel : ObservableObject {
         return SearchAsync();
     }
 
+    /// <summary>The next page; the view calls it too when the list is scrolled near its end.</summary>
     [RelayCommand]
-    private async Task LoadMore() {
+    public async Task LoadMore() {
         if (!CanLoadMore) {
             return;
         }
@@ -258,9 +278,11 @@ public sealed partial class MarketViewModel : ObservableObject {
         _searchVersion++;
         int version = _searchVersion;
         Rows.Clear();
+        _loadedRows.Clear();
         _totalCount = 0;
         _loadedPage = 0;
         await LoadPageAsync(1, version);
+        await FillAsync(version);
     }
 
     private async Task LoadPageAsync(int page, int version) {
@@ -276,13 +298,14 @@ public sealed partial class MarketViewModel : ObservableObject {
             foreach (MarketMap map in result.Maps) {
                 var row = new MarketRowViewModel(map);
                 ApplyInstalledState(row, installedModIds, marketModIds);
-                Rows.Add(row);
+                _loadedRows.Add(row);
+                if (IsShown(row)) {
+                    Rows.Add(row);
+                }
             }
             _loadedPage = page;
             _totalCount = result.TotalCount;
-            StatusText = Rows.Count == 0
-                ? "No maps found."
-                : string.Create(CultureInfo.InvariantCulture, $"{Rows.Count:N0} of {_totalCount:N0} maps");
+            UpdateStatusText();
         } catch (Exception exception) when (IsNetworkProblem(exception)) {
             if (version == _searchVersion) {
                 StatusText = $"GameBanana did not answer: {exception.Message}";
@@ -293,6 +316,40 @@ public sealed partial class MarketViewModel : ObservableObject {
                 OnPropertyChanged(nameof(CanLoadMore));
             }
         }
+    }
+
+    /// <summary>With installed maps hidden, a page may add few cards; load on until the view is filled.</summary>
+    private async Task FillAsync(int version) {
+        for (int pages = 0; pages < MaxFillPages; pages++) {
+            bool needsMore = HideInstalled && Rows.Count < FillTarget && CanLoadMore && version == _searchVersion;
+            if (!needsMore) {
+                return;
+            }
+            await LoadPageAsync(_loadedPage + 1, version);
+        }
+    }
+
+    private bool IsShown(MarketRowViewModel row) {
+        return !HideInstalled || !row.IsInstalled;
+    }
+
+    private void ShowRows() {
+        Rows.Clear();
+        foreach (MarketRowViewModel row in _loadedRows.Where(IsShown)) {
+            Rows.Add(row);
+        }
+        UpdateStatusText();
+        OnPropertyChanged(nameof(CanLoadMore));
+    }
+
+    private void UpdateStatusText() {
+        if (_loadedRows.Count == 0) {
+            StatusText = "No maps found.";
+            return;
+        }
+        string loaded = string.Create(CultureInfo.InvariantCulture, $"{_loadedRows.Count:N0} of {_totalCount:N0} maps loaded");
+        int hidden = _loadedRows.Count - Rows.Count;
+        StatusText = hidden == 0 ? loaded : string.Create(CultureInfo.InvariantCulture, $"{loaded}, {hidden:N0} already installed are hidden");
     }
 
     /// <summary>

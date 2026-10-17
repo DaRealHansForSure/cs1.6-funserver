@@ -190,13 +190,16 @@
                                   SelectedItem="{Binding SelectedSort}" DisplayMemberPath="Label" AutomationProperties.Name="Sort" />
                         <ComboBox DockPanel.Dock="Right" Style="{StaticResource Select}" Width="230" Margin="0,0,8,0" ItemsSource="{Binding Categories}"
                                   SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Label" AutomationProperties.Name="Category" />
+                        <CheckBox DockPanel.Dock="Right" Content="Hide installed" Style="{StaticResource AccentCheckBox}" VerticalAlignment="Center"
+                                  Margin="0,0,16,0" IsChecked="{Binding HideInstalled}" />
                         <TextBox DockPanel.Dock="Right" Style="{StaticResource TextInput}" Width="220" Margin="0,0,8,0" Tag="Name contains"
                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Search the market" />
                         <TextBlock Text="Market" Style="{StaticResource CardTitleText}" VerticalAlignment="Center" />
                     </DockPanel>
                     <TextBlock Grid.Row="1" Text="{Binding StatusText}" Style="{StaticResource HintText}" Margin="0,0,0,10" />
 
-                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <!-- Near the end of the list the next page loads by itself (code-behind). -->
+                    <ScrollViewer x:Name="MarketScroll" Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False" ScrollChanged="OnMarketScrolled">
                         <StackPanel>
                             <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
                                 <ItemsControl.ItemsPanel>

@@ -192,8 +192,10 @@
                     <Border Style="{StaticResource Card}" Margin="0,16,0,0">
                         <StackPanel>
                             <DockPanel Margin="0,0,0,12">
-                                <TextBlock DockPanel.Dock="Right" Text="{Binding MapsInfo}" Style="{StaticResource HintText}" />
-                                <TextBlock Text="{Binding MapsTitle}" Style="{StaticResource CardTitleText}" />
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding MapsInfo}" Style="{StaticResource HintText}" VerticalAlignment="Center" />
+                                <TextBox DockPanel.Dock="Right" Style="{StaticResource TextInput}" Width="200" Margin="0,0,16,0" Tag="Search maps"
+                                         Text="{Binding MapSearchText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Search maps" />
+                                <TextBlock Text="{Binding MapsTitle}" Style="{StaticResource CardTitleText}" VerticalAlignment="Center" />
                             </DockPanel>
                             <TextBlock Text="No mapcycle file for this mode. Run Install or repair on the Install screen." Style="{StaticResource HintText}" Margin="0,0,0,12">
                                 <TextBlock.Visibility>
@@ -205,6 +207,12 @@
                                 </TextBlock.Visibility>
                             </TextBlock>
                             <ItemsControl ItemsSource="{Binding Maps}" Focusable="False">
+                                <!-- A search hides rows; UniformGrid skips collapsed ones, so the rest closes up. -->
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+                                        <Setter Property="Visibility" Value="{Binding IsShown, Converter={StaticResource VisibleWhenTrue}}" />
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
                                         <UniformGrid Columns="2" />

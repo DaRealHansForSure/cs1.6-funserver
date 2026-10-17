@@ -22,6 +22,8 @@ public sealed class AppSettings {
     public string LastScreen { get; set; } = "LiveMap";
     public bool ShowNames { get; set; } = true;
     public bool ShowTrails { get; set; } = true;
+    public bool ShowWeapons { get; set; } = true;
+    public bool MarketHidesInstalled { get; set; }
     public bool ShowShots { get; set; } = true;
     public bool ShowNavMesh { get; set; }
     public int MaxPlayers { get; set; } = ServerProcess.DefaultMaxPlayers;
