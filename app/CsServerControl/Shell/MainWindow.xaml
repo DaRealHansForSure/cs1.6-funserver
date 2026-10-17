@@ -10,7 +10,7 @@
         xmlns:options="clr-namespace:CsServerControl.Options"
         xmlns:install="clr-namespace:CsServerControl.Install"
         Title="CS 1.6 Server Control"
-        Icon="/app.ico"
+        Icon="pack://application:,,,/CsServerControl;component/app.ico"
         MinWidth="1100" MinHeight="700" Width="1440" Height="900"
         Background="{StaticResource WindowBackground}"
         Foreground="{StaticResource TextPrimary}"

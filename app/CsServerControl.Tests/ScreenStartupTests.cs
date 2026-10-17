@@ -19,7 +19,7 @@ public class ScreenStartupTests : IDisposable {
 
     public ScreenStartupTests() {
         Directory.CreateDirectory(Path.Combine(_rootDir, "tools"));
-        var settings = new AppSettings { RconPassword = "test-only" };
+        var settings = new AppSettings { RconPassword = "test-only", FilePath = Path.Combine(_rootDir, "settings.json") };
         _connection = new ServerConnection(new PackagePaths(_rootDir), settings, Dispatcher.CurrentDispatcher);
     }
 

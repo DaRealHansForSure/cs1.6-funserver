@@ -44,19 +44,24 @@ time left, LAN address and uptime.
 
   Live Map   3D wireframe of the current map with every player on it in
              real time: team color, view direction, trails, hook beam,
-             dead marker. Player list, details of the selected player
+             dead marker. "Shots" draws every bullet path for a moment in
+             the shooter's team color, a hit thicker and with a small
+             cross. Player list, details of the selected player
              (follow camera, slay, kick) and the kill feed with the game's
              own weapon icons.
              Camera: left drag moves, right drag orbits, wheel zooms,
              W/A/S/D move, Q/E rotate, R/F tilt, T top view, Home resets.
              "Nav mesh" shows the areas, links and hiding spots the bots
              navigate by (debug view).
-  Server     Start, Stop, Restart. Pick a mode and a map, then Apply: the
+  Server     Start, Stop, Restart. Settings come first (see below). Pick a
+             mode and a map, then Apply: the
              server switches to exactly that mode and map at once, Discard
              goes back to what runs. "Details" (or a double-click) on a map
              opens its preview, a top-down overview and stats (spawns,
              size, objective, bot navigation, how often it was played,
-             kills, best player). Console with RCON command input.
+             kills, best player). Console with RCON command input;
+             "Follow" keeps the newest line in view, scrolling up to read
+             turns it off.
              Round (runs at once): force the next fun round, restart the
              round, hook on/off for this map, a message to everybody.
              Settings (draft, saved in server\cstrike\local.cfg on Apply):
@@ -67,9 +72,23 @@ time left, LAN address and uptime.
              and chat. Everything is a draft until Apply, also kicking a
              bot, adding bots and building navigation files; Discard drops
              it all. Settings are saved in modes\base.cfg.
+  Maps       every installed map in one table: picture, the modes that
+             play it, where it came from (stock, map pack, custom), its
+             navigation file and size. Search and a Show filter (per mode,
+             missing navigation, missing picture, not playable). Details,
+             Pick (puts mode and map on the Server screen as a draft) and
+             Next (next map at once). Buttons to render the missing
+             pictures, queue all missing navigation files on the Bots
+             screen, open the custom-maps folder and update the maps.
   Stats      leaderboard of this map or the last 12 hours (kills, deaths,
              K/D, knife, HE, best weapon), the maps played tonight with
              mode and duration, and how far the current map is.
+  Install    install or repair, update maps, rebuild plugins, with the log.
+  Options    server address (automatic, or a fixed network adapter), the
+             ports, the Windows Firewall rules with "Add or repair rules",
+             a new RCON password, the screen the window opens on, and the
+             folders. A draft like the other screens; address and password
+             only change while the server is stopped.
 
 The player card on the Live Map also has the fun commands for the selected
 player: glow (pick a color), rocket, godmode, noclip, and Reset to switch
@@ -95,7 +114,9 @@ is built by zBot when a bot first joins that map. "Generate" on the Bots
 screen builds it right away in a hidden second server on 127.0.0.1:27016,
 without changing the map of the running game. "Generate all missing" queues
 every map without one; worth doing once before a LAN evening, it takes
-roughly a minute per map. The hidden server runs on an invisible desktop,
+roughly a minute per map (a big one like de_survivor about ten). A file
+made for another version of the map shows as "Outdated" and is rebuilt
+the same way. The hidden server runs on an invisible desktop,
 so it never pops up or takes the focus from a game.
 
 The window talks to the server over RCON with a random password stored in
@@ -104,12 +125,18 @@ so a server started outside the window accepts it too). The
 status is read with the normal server query, so the game logs do not fill
 up with RCON lines.
 
-The Maps and Options entries in the left rail are placeholders for later.
-
 Map pictures: the installer downloads one screenshot per fun map from
 GameBanana into tools\previews\ (the ModId column of tools\maps.csv),
 stock maps show their radar image. For any other map put a <mapname>.jpg
-or .png into tools\previews\, the installer never replaces it.
+or .png into tools\previews\, the installer never replaces it. "Generate
+missing pictures" on the Maps screen draws the rest from above out of the
+map geometry (tools\previews\auto\); your own picture always wins.
+
+Broken maps: a map that needs a model or sprite the server does not have
+would freeze the server when it loads. The installer copies such files
+from the map's archive to where the map expects them; a map that still
+misses one stays out of every map list (the Install log says which file)
+and shows as "not playable" on the Maps screen.
 
 The exe is built from the source in app\ with
   dotnet publish app\CsServerControl -c Release

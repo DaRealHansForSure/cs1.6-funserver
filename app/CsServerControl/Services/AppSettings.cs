@@ -31,6 +31,10 @@ public sealed class AppSettings {
     /// <summary>The screen the window opens on; empty opens the one used last.</summary>
     public string StartScreen { get; set; } = "";
 
+    /// <summary>Where Save writes; tests point it at a temp file so they never touch the real settings.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string FilePath { get; init; } = SettingsFile;
+
     public static string SettingsFile => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CsServerControl", "settings.json");
 
@@ -45,8 +49,8 @@ public sealed class AppSettings {
 
     public void Save() {
         try {
-            Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile)!);
-            File.WriteAllText(SettingsFile, JsonSerializer.Serialize(this, JsonOptions));
+            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(this, JsonOptions));
         } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) {
             // Losing the window position is not worth an error dialog.
         }
