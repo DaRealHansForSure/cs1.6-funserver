@@ -56,10 +56,24 @@
     <Exec Command="dotnet test &quot;$(PackageRoot)app\CsServerControl.Tests\CsServerControl.Tests.csproj&quot; -nologo -v q --artifacts-path &quot;$(PackageRoot)app\.artifacts\tests&quot;" />
   </Target>
 
-  <!-- An open window locks the exe; the copy then fails loudly instead of
-       leaving the old version in place. -->
+  <!-- An open window or the fast download server (the same exe, running as
+       long as the game server runs) locks the exe. Windows still lets a
+       running exe be renamed, so the old one moves aside into
+       app\.artifacts\old and keeps running from there; the next start uses
+       the new one. Old copies that no longer run are cleared first. -->
   <Target Name="CopyExeToPackageRoot" AfterTargets="Publish">
-    <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(PackageRoot)4_SERVER_CONTROL.exe" />
+    <PropertyGroup>
+      <TargetExe>$(PackageRoot)4_SERVER_CONTROL.exe</TargetExe>
+      <OldExeDir>$(PackageRoot)app\.artifacts\old\</OldExeDir>
+      <OldExe>$(OldExeDir)4_SERVER_CONTROL.$([System.DateTime]::Now.ToString('yyyyMMdd-HHmmss')).exe</OldExe>
+    </PropertyGroup>
+    <ItemGroup>
+      <OldExeFile Include="$(OldExeDir)*.exe" />
+    </ItemGroup>
+    <Delete Files="@(OldExeFile)" ContinueOnError="true" />
+    <MakeDir Directories="$(OldExeDir)" />
+    <Move SourceFiles="$(TargetExe)" DestinationFiles="$(OldExe)" Condition="Exists('$(TargetExe)')" />
+    <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(TargetExe)" />
     <Message Importance="high" Text="Done: $(PackageRoot)4_SERVER_CONTROL.exe" />
   </Target>
 
