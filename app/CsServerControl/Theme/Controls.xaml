@@ -452,12 +452,13 @@
                                           Content="{TemplateBinding SelectionBoxItem}"
                                           ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
                                           ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" />
-                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True"
+                        <!-- No AllowsTransparency: square corners need none, and a layered (transparent)
+                             popup is drawn in software, which made every first open take a second or two. -->
+                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" VerticalOffset="2"
                                Focusable="False" PopupAnimation="None">
                             <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
                                     Background="{StaticResource CardBackground}" BorderBrush="{StaticResource ControlBorder}"
-                                    BorderThickness="{StaticResource BorderOne}" CornerRadius="{StaticResource RadiusControl}" Padding="4"
-                                    Margin="0,2,0,0">
+                                    BorderThickness="{StaticResource BorderOne}" CornerRadius="{StaticResource RadiusControl}" Padding="4">
                                 <ScrollViewer MaxHeight="300">
                                     <ItemsPresenter />
                                 </ScrollViewer>
@@ -602,7 +603,7 @@
                                   StrokeThickness="1.5" VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed" />
                             <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="4" VerticalOffset="-5"
                                    IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
-                                   AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                                   Focusable="False" PopupAnimation="None">
                                 <Border Background="{StaticResource CardBackground}" BorderBrush="{StaticResource ControlBorder}"
                                         BorderThickness="{StaticResource BorderOne}" Padding="4">
                                     <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
