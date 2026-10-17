@@ -23,7 +23,11 @@ public sealed record LivePlayer(
     int Deaths,
     string Weapon,
     bool IsHooking,
-    Vector3 HookPoint);
+    Vector3 HookPoint,
+    PlayerGlow? Glow = null);
+
+/// <summary>The glow shell color of a player, from amx_glow, streaks, Juggernaut or zombies.</summary>
+public readonly record struct PlayerGlow(byte Red, byte Green, byte Blue);
 
 public sealed record LiveSnapshot(
     string MapName,
@@ -43,6 +47,7 @@ public sealed class LiveFeedParser {
     public const string Prefix = "CSLIVE1|";
 
     private const int PlayerFieldCount = 18;
+    private const int PlayerFieldCountWithGlow = 21;
 
     public int MalformedLineCount { get; private set; }
 
@@ -160,7 +165,23 @@ public sealed class LiveFeedParser {
             deaths,
             fields[13],
             fields[14] == "1",
-            new Vector3(hookX, hookY, hookZ));
+            new Vector3(hookX, hookY, hookZ),
+            ReadGlow(fields));
+    }
+
+    /// <summary>
+    /// The three glow fields after the hook point; -1 means no glow. Lines of
+    /// older plugin versions end before them and simply have no glow.
+    /// </summary>
+    private static PlayerGlow? ReadGlow(string[] fields) {
+        if (fields.Length < PlayerFieldCountWithGlow) {
+            return null;
+        }
+        bool numbersOk = TryInt(fields[18], out int red) & TryInt(fields[19], out int green) & TryInt(fields[20], out int blue);
+        if (!numbersOk || red < 0 || green < 0 || blue < 0) {
+            return null;
+        }
+        return new PlayerGlow((byte)Math.Min(red, 255), (byte)Math.Min(green, 255), (byte)Math.Min(blue, 255));
     }
 
     private static bool TryInt(string text, out int value) {

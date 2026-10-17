@@ -106,6 +106,8 @@
                         <hx:LineGeometryModel3D x:Name="PlayerWideLines" Thickness="6" Smoothness="1" IsHitTestVisible="False" Color="White" />
                         <hx:LineGeometryModel3D x:Name="PlayerMediumLines" Thickness="2" Smoothness="0.5" IsHitTestVisible="False" Color="White" />
                         <hx:LineGeometryModel3D x:Name="PlayerThinLines" Thickness="1" Smoothness="0.5" IsHitTestVisible="False" Color="White" />
+                        <!-- Glow halo first, so the head marker is drawn on top of it. -->
+                        <hx:PointGeometryModel3D x:Name="PlayerGlows" Size="24,24" Figure="Ellipse" Color="White" IsHitTestVisible="False" />
                         <hx:PointGeometryModel3D x:Name="PlayerHeads" Size="11,11" Figure="Ellipse" Color="White" IsHitTestVisible="False" />
                     </hx:Viewport3DX>
 
@@ -201,6 +203,14 @@
                                                     <ColumnDefinition Width="8" />
                                                     <ColumnDefinition Width="44" />
                                                 </Grid.ColumnDefinitions>
+                                                <!-- A glowing player gets a ring in the glow color around the team dot. -->
+                                                <Ellipse Grid.Column="0" Width="16" Height="16" Margin="-3,0,-3,0" StrokeThickness="2"
+                                                         VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                         Visibility="{Binding HasGlow, Converter={StaticResource VisibleWhenTrue}}">
+                                                    <Ellipse.Stroke>
+                                                        <SolidColorBrush Color="{Binding GlowColor}" />
+                                                    </Ellipse.Stroke>
+                                                </Ellipse>
                                                 <Ellipse x:Name="Dot" Grid.Column="0" Style="{StaticResource TeamDot}" />
                                                 <TextBlock Grid.Column="2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
                                                     <Run Text="{Binding Name, Mode=OneWay}" />
@@ -301,13 +311,24 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Health" Foreground="{StaticResource TextTertiary}" Margin="0,0,0,6" />
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedHealthText}" />
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Weapon" Foreground="{StaticResource TextTertiary}" Margin="0,0,0,6" />
                                     <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedWeaponText}" />
-                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Position" Foreground="{StaticResource TextTertiary}" />
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Position" Foreground="{StaticResource TextTertiary}" Margin="0,0,0,6" />
                                     <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedPositionText}" FontFamily="{StaticResource MonoFont}" />
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Glow" Foreground="{StaticResource TextTertiary}" />
+                                    <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal">
+                                        <Rectangle Width="10" Height="10" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                   Visibility="{Binding SelectedHasGlow, Converter={StaticResource VisibleWhenTrue}}">
+                                            <Rectangle.Fill>
+                                                <SolidColorBrush Color="{Binding SelectedGlowColor}" />
+                                            </Rectangle.Fill>
+                                        </Rectangle>
+                                        <TextBlock Text="{Binding SelectedGlowText}" />
+                                    </StackPanel>
                                 </Grid>
 
                                 <StackPanel Orientation="Horizontal" Margin="0,12,0,0">

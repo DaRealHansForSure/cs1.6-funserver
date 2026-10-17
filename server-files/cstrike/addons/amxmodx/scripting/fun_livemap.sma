@@ -8,8 +8,12 @@
 //
 // Packet format (text, lines separated by a newline):
 //   CSLIVE1|S|<map>|<mode>|<roundSecondsLeft>|<maxPlayers>
-//   P|<userid>|<name>|<team>|<alive>|<bot>|<hp>|<x>|<y>|<z>|<yaw>|<frags>|<deaths>|<weapon>|<hooking>|<hx>|<hy>|<hz>
+//   P|<userid>|<name>|<team>|<alive>|<bot>|<hp>|<x>|<y>|<z>|<yaw>|<frags>|<deaths>|<weapon>|<hooking>|<hx>|<hy>|<hz>|<glowR>|<glowG>|<glowB>
 //   CSLIVE1|K|<killerUserid>|<victimUserid>|<weapon>|<headshot>
+//
+// The glow color is the glow shell a player has right now (amx_glow, kill
+// streaks, Juggernaut, zombies all use it), -1|-1|-1 without one. The app
+// also reads player lines that end after <hz>, from older versions.
 //
 // Cvars:
 //   fun_livemap_target    IP address of the app (default 127.0.0.1)
@@ -276,8 +280,19 @@ appendPlayerLine(playerId, offset)
         isHooking = 1;
     }
 
+    new glowRed = -1;
+    new glowGreen = -1;
+    new glowBlue = -1;
+    if (isAlive && pev(playerId, pev_renderfx) == kRenderFxGlowShell) {
+        new Float:glowColor[3];
+        pev(playerId, pev_rendercolor, glowColor);
+        glowRed = floatround(glowColor[0]);
+        glowGreen = floatround(glowColor[1]);
+        glowBlue = floatround(glowColor[2]);
+    }
+
     return formatex(gPacket[offset], charsmax(gPacket) - offset,
-        "^nP|%d|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s|%d|%d|%d|%d",
+        "^nP|%d|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s|%d|%d|%d|%d|%d|%d|%d",
         get_user_userid(playerId),
         name,
         teamName,
@@ -294,7 +309,10 @@ appendPlayerLine(playerId, offset)
         isHooking,
         floatround(hookPoint[0]),
         floatround(hookPoint[1]),
-        floatround(hookPoint[2]));
+        floatround(hookPoint[2]),
+        glowRed,
+        glowGreen,
+        glowBlue);
 }
 
 getTeamName(playerId, teamName[], length)

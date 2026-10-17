@@ -13,7 +13,8 @@ public sealed record PlayerRenderState(
     float Yaw,
     bool IsHooking,
     Vector3 HookPoint,
-    IReadOnlyList<Vector3> Trail);
+    IReadOnlyList<Vector3> Trail,
+    PlayerGlow? Glow);
 
 /// <summary>
 /// The movement of one player between feed packets: positions are blended
@@ -77,7 +78,8 @@ public sealed class PlayerTrack {
             YawAt(now),
             Latest.IsHooking,
             Latest.HookPoint,
-            trail);
+            trail,
+            Latest.Glow);
     }
 
     private Vector3 OriginAt(DateTime now) {

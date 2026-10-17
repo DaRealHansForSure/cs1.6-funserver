@@ -288,6 +288,7 @@ public partial class LiveMapView : UserControl {
         PlayerMediumLines.Geometry = NullIfEmpty(lines.Medium);
         PlayerWideLines.Geometry = NullIfEmpty(lines.Wide);
         PlayerHeads.Geometry = BuildHeadPoints(players);
+        PlayerGlows.Geometry = BuildGlowPoints(players, look);
 
         UpdateNameLabels(players, viewProjection);
     }
@@ -307,6 +308,33 @@ public partial class LiveMapView : UserControl {
         foreach (PlayerRenderState player in players.Where(candidate => candidate.IsAlive)) {
             positions.Add(PlayerSceneBuilder.ToVector(player.Origin) + new Vector3(0, 0, LiveMapViewModel.HeadOffset));
             colors.Add(WireframeScene.ToColor4(Colors.TeamColor(player.Team), 1f));
+        }
+        if (positions.Count == 0) {
+            return null;
+        }
+        return new PointGeometry3D { Positions = positions, Colors = colors };
+    }
+
+    /// <summary>
+    /// A soft disc in the glow color behind the head of every glowing player,
+    /// like the glow shell in game. Mixed into the background instead of
+    /// alpha (see WireframeScene.Blend), and pushed a few units away from the
+    /// camera so the head marker always wins the depth test.
+    /// </summary>
+    private PointGeometry3D? BuildGlowPoints(IReadOnlyList<PlayerRenderState> players, Vector3 look) {
+        const float BehindHead = 8f;
+        const float GlowOpacity = 0.55f;
+
+        Vector3 away = look.LengthSquared() > 0 ? Vector3.Normalize(look) * BehindHead : Vector3.Zero;
+        var positions = new Vector3Collection();
+        var colors = new Color4Collection();
+        foreach (PlayerRenderState player in players) {
+            if (!player.IsAlive || player.Glow == null) {
+                continue;
+            }
+            PlayerGlow glow = player.Glow.Value;
+            positions.Add(PlayerSceneBuilder.ToVector(player.Origin) + new Vector3(0, 0, LiveMapViewModel.HeadOffset) + away);
+            colors.Add(WireframeScene.Blend(MediaColor.FromRgb(glow.Red, glow.Green, glow.Blue), Colors.Background, GlowOpacity));
         }
         if (positions.Count == 0) {
             return null;

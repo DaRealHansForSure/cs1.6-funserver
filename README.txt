@@ -73,6 +73,9 @@ The player card on the Live Map also has the fun commands for the selected
 player: glow (pick a color), rocket, godmode, noclip, and Reset to switch
 glow, godmode and noclip off again. They run at once, like Slay. The same
 commands are in the right-click menu of every row in the Players list.
+A glowing player (amx_glow, a kill streak, the Juggernaut, a zombie) shows
+the glow in the window too: a halo on the 3D map, a ring around the team
+dot in the list and the color in the player card.
 
 TV for a big screen: tick "Broadcast to a TV" on the Server screen and
 Apply. That starts an HLTV proxy. On the PC at the TV or projector start

@@ -40,6 +40,14 @@ public sealed partial class PlayerRowViewModel : ObservableObject {
     [ObservableProperty]
     private bool _isSelected;
 
+    /// <summary>The player's glow shell, shown as a ring around the team dot.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGlow), nameof(GlowColor))]
+    private PlayerGlow? _glow;
+
+    public bool HasGlow => Glow != null && IsAlive;
+    public Color GlowColor => Glow == null ? Colors.Transparent : Color.FromRgb(Glow.Value.Red, Glow.Value.Green, Glow.Value.Blue);
+
     public PlayerRowViewModel(int userId) {
         UserId = userId;
     }
@@ -56,6 +64,8 @@ public sealed partial class PlayerRowViewModel : ObservableObject {
         Health = player.Health;
         Frags = player.Frags;
         Deaths = player.Deaths;
+        Glow = player.Glow;
+        OnPropertyChanged(nameof(HasGlow));
     }
 }
 
@@ -113,7 +123,8 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelection), nameof(SelectedName), nameof(SelectedTeam), nameof(SelectedTeamText),
-        nameof(SelectedHealthText), nameof(SelectedHealthPercent), nameof(SelectedWeaponText), nameof(SelectedPositionText))]
+        nameof(SelectedHealthText), nameof(SelectedHealthPercent), nameof(SelectedWeaponText), nameof(SelectedPositionText),
+        nameof(SelectedGlowText), nameof(SelectedHasGlow), nameof(SelectedGlowColor))]
     private PlayerRowViewModel? _selectedPlayer;
 
     [ObservableProperty]
@@ -231,6 +242,10 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
             return WeaponNames.Display(player.Weapon);
         }
     }
+
+    public bool SelectedHasGlow => SelectedPlayer?.HasGlow == true;
+    public Color SelectedGlowColor => SelectedPlayer?.GlowColor ?? Colors.Transparent;
+    public string SelectedGlowText => SelectedHasGlow ? GlowNames.Describe(SelectedPlayer!.Glow) : "-";
 
     public string SelectedPositionText {
         get {
@@ -584,6 +599,9 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         OnPropertyChanged(nameof(SelectedHealthPercent));
         OnPropertyChanged(nameof(SelectedWeaponText));
         OnPropertyChanged(nameof(SelectedPositionText));
+        OnPropertyChanged(nameof(SelectedGlowText));
+        OnPropertyChanged(nameof(SelectedHasGlow));
+        OnPropertyChanged(nameof(SelectedGlowColor));
         OnPropertyChanged(nameof(CameraModeText));
     }
 

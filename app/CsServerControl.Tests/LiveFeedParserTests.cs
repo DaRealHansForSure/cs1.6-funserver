@@ -94,6 +94,26 @@ public class LiveFeedParserTests {
     }
 
     [Fact]
+    public void ReadsTheGlowColor() {
+        string packet = string.Join('\n',
+            "CSLIVE1|S|de_dust2|classic|60|20",
+            "P|1|Pinky|T|1|0|100|0|0|0|0|0|0|ak47|0|0|0|0|255|0|200",
+            "P|2|Plain|CT|1|0|100|0|0|0|0|0|0|m4a1|0|0|0|0|-1|-1|-1",
+            "P|3|OldPlugin|CT|1|0|100|0|0|0|0|0|0|m4a1|0|0|0|0");
+
+        var parser = new LiveFeedParser();
+        var snapshot = Assert.IsType<LiveSnapshot>(parser.Parse(packet));
+
+        Assert.Equal(new PlayerGlow(255, 0, 200), snapshot.Players[0].Glow);
+        Assert.Null(snapshot.Players[1].Glow);
+        Assert.Null(snapshot.Players[2].Glow);
+        Assert.Equal(0, parser.MalformedLineCount);
+        Assert.Equal("pink", GlowNames.Describe(snapshot.Players[0].Glow));
+        Assert.Equal("gold (kill streak)", GlowNames.Describe(new PlayerGlow(255, 200, 0)));
+        Assert.Equal("custom", GlowNames.Describe(new PlayerGlow(1, 2, 3)));
+    }
+
+    [Fact]
     public void ToleratesWindowsLineEnds() {
         string packet = "CSLIVE1|S|de_dust2|classic|60|20\r\nP|1|A|T|1|0|100|1|2|3|4|0|0|knife|0|0|0|0\r\n";
 
