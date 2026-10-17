@@ -353,7 +353,9 @@
                         <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{StaticResource RadiusControl}">
                             <Grid>
-                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                                <!-- No margin: TextBox already hands its Padding to the content host, a margin here doubled it
+                                     and put the caret 8 px right of the placeholder. -->
+                                <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
                                 <TextBlock x:Name="Placeholder" Text="{TemplateBinding Tag}" Margin="10,0,10,0" VerticalAlignment="Center"
                                            FontFamily="{TemplateBinding FontFamily}" Foreground="{StaticResource TextTertiary}"
                                            IsHitTestVisible="False" Visibility="Collapsed" />
@@ -387,7 +389,9 @@
                                 BorderThickness="{StaticResource BorderOne}" CornerRadius="{StaticResource RadiusControl}" />
                         <Border BorderBrush="{StaticResource Accent}" BorderThickness="0,0,0,2" CornerRadius="{StaticResource RadiusControl}">
                             <Grid>
-                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                                <!-- No margin: TextBox already hands its Padding to the content host, a margin here doubled it
+                                     and put the caret 8 px right of the placeholder. -->
+                                <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
                                 <TextBlock x:Name="Placeholder" Text="{TemplateBinding Tag}" Margin="10,0,10,0" VerticalAlignment="Center"
                                            FontFamily="{TemplateBinding FontFamily}" Foreground="{StaticResource TextTertiary}"
                                            IsHitTestVisible="False" Visibility="Collapsed" />

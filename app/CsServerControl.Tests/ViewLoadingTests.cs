@@ -64,6 +64,29 @@ public class ViewLoadingTests {
         });
     }
 
+    [Theory]
+    [InlineData("TextInput")]
+    [InlineData("RconInput")]
+    public void TheCaretStartsWhereThePlaceholderStarts(string styleKey) {
+        RunOnStaThread(() => {
+            EnsureApplicationWithTheme();
+            var box = new System.Windows.Controls.TextBox {
+                Style = (Style)Application.Current!.FindResource(styleKey),
+                Tag = "Mode default: 25",
+                Width = 400,
+            };
+            box.Measure(new Size(400, 100));
+            box.Arrange(new Rect(0, 0, 400, 40));
+            box.UpdateLayout();
+
+            var placeholder = (System.Windows.Controls.TextBlock)box.Template.FindName("Placeholder", box);
+            double placeholderX = placeholder.TransformToAncestor(box).Transform(new Point(0, 0)).X;
+            double caretX = box.GetRectFromCharacterIndex(0).X;
+
+            Assert.InRange(caretX - placeholderX, -1, 1);
+        });
+    }
+
     private static List<string> TextsIn(DependencyObject root) {
         var texts = new List<string>();
         int count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
