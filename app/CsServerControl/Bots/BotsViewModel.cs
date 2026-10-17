@@ -474,6 +474,38 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
     private void UpdatePendingCount() {
         PendingActionCount = _pendingKicks.Count + NavRows.Count(row => row.State == NavState.Queued);
         OnPropertyChanged(nameof(MissingNavCount));
+        SortNavRows();
+    }
+
+    /// <summary>
+    /// What needs attention first: running builds, then queued ones, then
+    /// missing or outdated files, then the maps that are done; by name in
+    /// each group. Moves rows instead of rebuilding, so nothing flickers.
+    /// </summary>
+    private void SortNavRows() {
+        List<NavRowViewModel> sorted = NavRows
+            .OrderBy(row => SortRank(row.State))
+            .ThenBy(row => row.MapName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        for (int index = 0; index < sorted.Count; index++) {
+            int current = NavRows.IndexOf(sorted[index]);
+            if (current != index) {
+                NavRows.Move(current, index);
+            }
+        }
+    }
+
+    private static int SortRank(NavState state) {
+        switch (state) {
+            case NavState.Generating:
+                return 0;
+            case NavState.Queued:
+                return 1;
+            case NavState.Missing:
+                return 2;
+            default:
+                return 3;
+        }
     }
 
     private async Task<bool> ApplySettingsAsync() {
@@ -558,6 +590,7 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
         row.Step = null;
         row.Elapsed = TimeSpan.Zero;
         row.State = NavState.Generating;
+        SortNavRows();
     }
 
     private void FinishGenerating(NavRowViewModel row) {
@@ -568,6 +601,7 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
         row.IsOutdated = file.IsOutdated;
         row.State = row.FileState;
         row.RefreshStatus();
+        SortNavRows();
     }
 
     private void UpdateElapsed() {
