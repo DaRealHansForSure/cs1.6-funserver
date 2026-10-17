@@ -1,8 +1,9 @@
 # Installs a complete Counter-Strike 1.6 LAN fun server into the "server"
 # folder next to this package.
 #
-# Steps: SteamCMD + HLDS, ReHLDS, ReGameDLL, Metamod-R, AMX Mod X, YaPB bots,
-# the fun plugins and configs from server-files, then the map pack.
+# Steps: SteamCMD + HLDS, ReHLDS, ReGameDLL, Metamod-R, AMX Mod X, the zBot
+# bot profiles from ReGameDLL, the fun plugins and configs from
+# server-files, then the map pack.
 # Running it again is safe: downloads are cached and every step re-applies
 # its changes, so it also works as a repair or update.
 #
@@ -36,13 +37,15 @@ $FunPluginsMarker = '; --- LAN Fun Server ---'
 # Pinned versions, so every LAN party gets the same tested setup.
 # To update, replace the URL with a newer release from the same project.
 $Components = @{
-    SteamCmd   = 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip'
-    ReHlds     = 'https://github.com/rehlds/ReHLDS/releases/download/3.15.0.896/rehlds-bin-3.15.0.896.zip'
-    ReGameDll  = 'https://github.com/rehlds/ReGameDLL_CS/releases/download/5.30.0.814/regamedll-bin-5.30.0.814.zip'
-    Metamod    = 'https://github.com/rehlds/Metamod-R/releases/download/1.3.0.149/metamod-bin-1.3.0.149.zip'
-    AmxBase    = 'https://github.com/alliedmodders/amxmodx/releases/download/1.10.0.5487/amxmodx-1.10.0-git5487-base-windows.zip'
-    AmxCstrike = 'https://github.com/alliedmodders/amxmodx/releases/download/1.10.0.5487/amxmodx-1.10.0-git5487-cstrike-windows.zip'
-    YapbBots   = 'https://github.com/yapb/yapb/releases/download/4.4.957/yapb-4.4.957-windows.zip'
+    SteamCmd     = 'https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip'
+    ReHlds       = 'https://github.com/rehlds/ReHLDS/releases/download/3.15.0.896/rehlds-bin-3.15.0.896.zip'
+    ReGameDll    = 'https://github.com/rehlds/ReGameDLL_CS/releases/download/5.30.0.814/regamedll-bin-5.30.0.814.zip'
+    Metamod      = 'https://github.com/rehlds/Metamod-R/releases/download/1.3.0.149/metamod-bin-1.3.0.149.zip'
+    AmxBase      = 'https://github.com/alliedmodders/amxmodx/releases/download/1.10.0.5487/amxmodx-1.10.0-git5487-base-windows.zip'
+    AmxCstrike   = 'https://github.com/alliedmodders/amxmodx/releases/download/1.10.0.5487/amxmodx-1.10.0-git5487-cstrike-windows.zip'
+    # zBot is built into ReGameDLL, only its data files ship separately.
+    # Keep the tag in this URL equal to the ReGameDll version above.
+    ZBotProfiles = 'https://raw.githubusercontent.com/rehlds/ReGameDLL_CS/5.30.0.814/regamedll/extra/zBot/bot_profiles.zip'
 }
 
 # Quake style announcer sounds for the stock miscstats plugin, from two
@@ -371,46 +374,70 @@ function Install-AmxModX {
     }
 }
 
-function Install-Yapb {
-    Write-Step 'YaPB (Bots)'
+function Install-ZBot {
+    Write-Step 'zBot (bots built into ReGameDLL)'
 
-    # YaPB learns unknown maps on its own (yb_graph_analyze_auto_start), so
-    # no waypoint pack is needed. The first round on a new map may lag briefly.
-    Install-AddonsArchive -Url $Components.YapbBots -FileName 'yapb.zip' -Title 'YaPB'
+    # The archive holds a cstrike folder with BotProfile.db, BotChatter.db
+    # and the radio voice sounds. zBot builds a missing maps\<map>.nav on its
+    # own when the first bot joins such a map, so no navigation pack is needed.
+    $extracted = Expand-Download (Get-CachedDownload -Url $Components.ZBotProfiles -FileName 'zbot-profiles.zip')
 
-    $yapbConfig = Join-Path $CstrikeDir 'addons\yapb\conf\yapb.cfg'
-    Add-BlockOnce -FilePath $yapbConfig -Lines @(
-        '// --- LAN Fun Server ---',
-        'yb_quota_mode "fill"',
-        'yb_autovacate "1"',
-        'yb_join_after_player "1"',
-        'yb_difficulty "2"',
-        'yb_language "en"'
-    )
+    $profileFile = Find-FirstFile -Root $extracted -FileName 'BotProfile.db'
+    if (-not $profileFile) {
+        throw 'BotProfile.db not found in the zBot profile archive.'
+    }
+    Copy-Item -Path (Join-Path $profileFile.DirectoryName '*') -Destination $CstrikeDir -Recurse -Force
+
+    Enable-ZBot
+}
+
+<#
+.SYNOPSIS
+Sets bot_enable 1 in game_init.cfg, which ReGameDLL runs once at startup
+before any other config. The ReGameDLL step ships that file with
+bot_enable "0" on every run, so this has to run after it.
+#>
+function Enable-ZBot {
+    $gameInitFile = Join-Path $CstrikeDir 'game_init.cfg'
+    $enableLine = 'bot_enable "1"'
+
+    if (-not (Test-Path $gameInitFile)) {
+        Set-Content -Path $gameInitFile -Value $enableLine -Encoding Ascii
+        return
+    }
+
+    $lines = @(Get-Content $gameInitFile)
+    $hasEnableLine = $false
+    $updatedLines = foreach ($line in $lines) {
+        if ($line -match '^\s*bot_enable\s') {
+            $hasEnableLine = $true
+            $enableLine
+        } else {
+            $line
+        }
+    }
+
+    if (-not $hasEnableLine) {
+        $updatedLines = @($updatedLines) + $enableLine
+    }
+    Set-Content -Path $gameInitFile -Value $updatedLines -Encoding Ascii
 }
 
 function Set-MetamodPlugins {
     Write-Step 'Registering Metamod plugins'
 
+    # Rewritten on every run, so a repair also drops the YaPB line of older
+    # package versions. Their addons\yapb folder stays but is never loaded.
     $amxDll = Find-FirstFile -Root (Join-Path $CstrikeDir 'addons\amxmodx') -FileName 'amxmodx_mm.dll'
-    $yapbDll = Find-FirstFile -Root (Join-Path $CstrikeDir 'addons\yapb') -FileName 'yapb.dll'
-
-    $pluginLines = @()
-    foreach ($pluginDll in @($amxDll, $yapbDll)) {
-        if (-not $pluginDll) {
-            continue
-        }
-        $relativePath = $pluginDll.FullName.Substring($CstrikeDir.Length + 1).Replace('\', '/')
-        $pluginLines += "win32 $relativePath"
-        Write-Note $relativePath
-    }
-
     if (-not $amxDll) {
         throw 'amxmodx_mm.dll is missing, AMX Mod X is not installed correctly.'
     }
 
+    $relativePath = $amxDll.FullName.Substring($CstrikeDir.Length + 1).Replace('\', '/')
+    Write-Note $relativePath
+
     $metamodPluginsFile = Join-Path $CstrikeDir 'addons\metamod\plugins.ini'
-    Set-Content -Path $metamodPluginsFile -Value $pluginLines -Encoding Ascii
+    Set-Content -Path $metamodPluginsFile -Value "win32 $relativePath" -Encoding Ascii
 }
 
 <#
@@ -499,7 +526,8 @@ function Set-AmxPluginList {
         'fun_rounds.amxx',
         'fun_deathrun.amxx',
         'fun_spawns.amxx',
-        'fun_streaks.amxx'
+        'fun_streaks.amxx',
+        'fun_livemap.amxx'
     )
     Add-BlockOnce -FilePath $pluginsIni -Lines (@($FunPluginsMarker) + $funPlugins)
 
@@ -947,7 +975,7 @@ function Invoke-ServerInstall {
     Install-ReGameDll
     Install-Metamod
     Install-AmxModX
-    Install-Yapb
+    Install-ZBot
     Set-MetamodPlugins
     Install-FunFiles
     Install-QuakeSounds

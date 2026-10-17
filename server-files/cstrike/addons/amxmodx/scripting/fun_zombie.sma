@@ -27,6 +27,7 @@
 
 #define TASK_COUNTDOWN 6100
 #define TASK_ZOMBIE_RESPAWN 6200
+#define TASK_ZBOT_HOOKS 6300
 
 const INFECTION_COUNTDOWN_SECONDS = 10;
 const PLAYERS_PER_FIRST_ZOMBIE = 6;
@@ -44,6 +45,8 @@ new const ZOMBIE_DEATH_SOUND[] = "zombie/zo_die1.wav";
 new bool:gIsZombie[MAX_PLAYERS + 1];
 new bool:gIsInfectionStarted;
 new bool:gIsRoundRunning;
+new bool:gIsZombieMode;
+new bool:gAreZbotHooksRegistered;
 new gCountdownSecondsLeft;
 new gHudSync;
 new gScreenFadeMessage;
@@ -65,6 +68,7 @@ public plugin_init()
     if (!is_fun_mode(FUN_MODE_ZOMBIE)) {
         return;
     }
+    gIsZombieMode = true;
 
     // HLTV fires before players respawn for a new round, the perfect moment
     // to move everybody back to the human side.
@@ -87,11 +91,36 @@ public plugin_init()
 public client_putinserver(playerId)
 {
     gIsZombie[playerId] = false;
+
+    if (gIsZombieMode && !gAreZbotHooksRegistered && is_zbot(playerId)) {
+        set_task(FUN_ZBOT_HOOK_DELAY, "registerZbotHooks", TASK_ZBOT_HOOKS + playerId);
+    }
+}
+
+/**
+ * zBot bots have their own vtable (see fun_common.inc), so the player hooks
+ * are registered once more on the first bot. All bots share that vtable,
+ * a second registration would run every handler twice.
+ */
+public registerZbotHooks(taskId)
+{
+    new botId = taskId - TASK_ZBOT_HOOKS;
+    if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
+        return;
+    }
+    gAreZbotHooksRegistered = true;
+
+    RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
+    RegisterHamFromEntity(Ham_Killed, botId, "onPlayerKilled", 1);
+    RegisterHamFromEntity(Ham_TakeDamage, botId, "onPlayerTakeDamage");
+    RegisterHamFromEntity(Ham_CS_Player_ResetMaxSpeed, botId, "onResetMaxSpeed", 1);
+    RegisterHamFromEntity(Ham_AddPlayerItem, botId, "onAddPlayerItem");
 }
 
 public client_disconnected(playerId)
 {
     remove_task(TASK_ZOMBIE_RESPAWN + playerId);
+    remove_task(TASK_ZBOT_HOOKS + playerId);
 
     new wasZombie = gIsZombie[playerId];
     gIsZombie[playerId] = false;

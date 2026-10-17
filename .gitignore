@@ -12,11 +12,11 @@ custom-maps/*
 
 *.mdmp
 
-# Server Control window: build output and the published exe (62 MB, rebuilt
-# with tools\build-gui.ps1), plus the downloaded map previews.
-gui/**/bin/
-gui/**/obj/
-gui/publish/
-gui/.artifacts/
+# Server Control app: build output and the published exe (rebuilt with
+# tools\build-app.ps1), plus the downloaded map previews.
+app/**/bin/
+app/**/obj/
+app/publish/
+app/.artifacts/
 4_SERVER_CONTROL.exe
 tools/previews/

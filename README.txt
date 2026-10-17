@@ -36,42 +36,57 @@ Instead of step 3 you can also use the window: 4_SERVER_CONTROL.exe
 SERVER CONTROL WINDOW
 ---------------------
 
-4_SERVER_CONTROL.exe controls the whole server with the mouse:
-  Server     pick the mode and map, then Start server; while it runs the
-             same button says Switch now and changes mode and map at
-             once. Start TV for a big screen (see below), LAN address
-  Maps       every installed map with a picture, filter by mode,
-             Play = change map now, First map = start the server on it
-  Players    who is on, bots +1 / -1 / off, glow, rocket, godmode,
-             noclip, slay, kick
-  Fun        force the next fun round, switch mode, restart round,
-             hook on/off, chat message to everybody
-  Stats      map time bar (played, left, next map), leaderboard of this map
-             or the last 12 hours (kills, deaths, K/D, knife, HE, best
-             weapon), and every map played tonight with how long it ran
-  Settings   server name, join password, max players, fun rounds,
-             hook speed, bots per mode (saved in server\cstrike\local.cfg
-             and local_<mode>.cfg)
-  Console    any server command at the bottom, with the answer
+4_SERVER_CONTROL.exe controls the server with the mouse and shows the game
+live. Above every screen a bar shows map, mode, players and bots, next map,
+time left, LAN address and uptime.
 
-It talks to the server over RCON with a random password that lives only
-in server\cstrike\local.cfg. A server started with 2_START_SERVER.bat
-works with the window too.
+  Live Map   3D wireframe of the current map with every player on it in
+             real time: team color, view direction, trails, hook beam,
+             dead marker. Player list, details of the selected player
+             (follow camera, slay, kick) and the kill feed with the game's
+             own weapon icons.
+             Camera: left drag moves, right drag orbits, wheel zooms,
+             W/A/S/D move, Q/E rotate, R/F tilt, T top view, Home resets.
+             "Nav mesh" shows the areas, links and hiding spots the bots
+             navigate by (debug view).
+  Server     Start, Stop, Restart. Pick a mode and a map, then Apply: the
+             server switches to exactly that mode and map at once, Discard
+             goes back to what runs. "Details" (or a double-click) on a map
+             opens its preview, a top-down overview and stats (spawns,
+             size, objective, bot navigation, how often it was played,
+             kills, best player). Console with RCON command input.
+  Bots       zBot settings: difficulty, fill count, teams, weapons, radio
+             and chat. Everything is a draft until Apply, also kicking a
+             bot, adding bots and building navigation files; Discard drops
+             it all. Settings are saved in modes\base.cfg.
 
-TV for a big screen: Start TV on the Server tab starts an HLTV proxy. On
-the PC at the TV or projector start CS and type in the console
-  connect <server IP>:27020
-That PC watches as a spectator with the automatic camera, 10 seconds
-behind the game. The TV uses one player slot. Allow UDP 27020 in the
-firewall if Windows asks (1_INSTALL.bat as admin adds the rule).
+The live map gets its data from the plugin fun_livemap on this PC only
+(UDP 127.0.0.1:27090, never on the LAN). Showing it on a projector for
+everybody works like a wallhack, that is your call.
+
+Navigation files (maps\<map>.nav) are what the bots walk by. A missing one
+is built by zBot when a bot first joins that map. "Generate" on the Bots
+screen builds it right away in a hidden second server on 127.0.0.1:27016,
+without changing the map of the running game.
+
+The window talks to the server over RCON with a random password stored in
+%APPDATA%\CsServerControl\settings.json (and in server\cstrike\local.cfg,
+so a server started with 2_START_SERVER.bat accepts the window too). The
+status is read with the normal server query, so the game logs do not fill
+up with RCON lines.
+
+Not in this window (use the console or the in-game menus instead): HLTV,
+the player fun commands (glow, rocket, godmode, noclip), the server name
+and join password settings. The Maps and Options entries in the left rail
+are placeholders for later.
 
 Map pictures: the installer downloads one screenshot per fun map from
 GameBanana into tools\previews\ (the ModId column of tools\maps.csv),
 stock maps show their radar image. For any other map put a <mapname>.jpg
 or .png into tools\previews\, the installer never replaces it.
 
-The exe is built from the source in gui\ with
-  powershell -ExecutionPolicy Bypass -File tools\build-gui.ps1
+The exe is built from the source in app\ with
+  powershell -ExecutionPolicy Bypass -File tools\build-app.ps1
 which needs the .NET 10 SDK once (winget install Microsoft.DotNet.SDK.10).
 
 
@@ -84,7 +99,7 @@ Foundation (downloaded from the official sources during installation):
   - ReGameDLL 5.30         game logic with respawn, free-for-all, bunnyhop
   - Metamod-R 1.3          plugin loader
   - AMX Mod X 1.10         admin mod
-  - YaPB 4.4               bots, fill up to 8 players and make room as
+  - zBot (in ReGameDLL)    bots, fill up to 8 players and make room as
                            soon as real players join
 
 Custom fun plugins (source code included, compiled during installation):
@@ -100,6 +115,8 @@ Custom fun plugins (source code included, compiled during installation):
   - fun_deathrun   the Deathrun mode (one trapper, everybody runs)
   - fun_spawns     random spawns all over the map in GunGame and Deathmatch
   - fun_streaks    kill streak rewards: glow, +50 HP, rocket jump
+  - fun_livemap    sends player positions and kills to the Server Control
+                   window (UDP 127.0.0.1:27090, stays on the server PC)
 
 Also enabled: miscstats (announcements like "Headshot", "Monster Kill",
 "Humiliation") and statsx (/rank, /top15).
@@ -165,7 +182,7 @@ DEATHRUN
     - Hook and parachute are off (they would skip the traps), auto
       bunnyhop is on.
   Bots: off in Deathrun, they do not know the traps. Back on in the other
-  modes. To allow some bots, change yb_quota in
+  modes. To allow some bots, change bot_quota in
   server-files\cstrike\modes\deathrun.cfg.
 
 SURF
@@ -185,40 +202,46 @@ SURF
   runs after the map type file.
 
 
-BOTS (YaPB)
+BOTS (zBot)
 -----------
 
-Set in the Server Control window, Settings tab, for every mode:
-  Skill            Newbie, Easy, Normal, Hard, Expert (yb_difficulty 0 to 4)
-  Radio and voice  Silent, Radio only, Radio and voice (yb_radio_mode)
-  Chat             on/off and how often a dead bot writes (yb_chat,
-                   yb_chat_percent)
-  Bots per mode    how many bots fill each mode (yb_quota)
-Without the window, put the same lines into server\cstrike\local_bots.cfg,
-for example  yb_difficulty "3"
+The bots are zBot, the Condition Zero bots built into ReGameDLL. The
+installer turns them on (bot_enable "1" in server\cstrike\game_init.cfg)
+and installs their names, skills and voice lines (BotProfile.db,
+BotChatter.db, sound\radio\bot\).
 
-Map rules win over these: surf maps run without bots, the rats maps
-(de_rats, de_rats4, cs_rats2) with 4 bots on Hard, because bots handle the
+Set in the Server Control window, Bots screen, for all modes:
+  bot_difficulty      0 Easy, 1 Normal, 2 Hard, 3 Expert (only new bots)
+  bot_quota           fill up to this many players (fill mode)
+  bot_quota_mode      fill, normal (fixed count) or match (per human)
+  bot_join_team       any, CT or T
+  bot_auto_vacate     1 = a bot leaves when a human joins
+  bot_deathmatch      1 = only fight, ignore bomb and hostages
+  bot_defer_to_human  1 = humans do the mission objectives
+  bot_allow_pistols, _shotguns, _sub_machine_guns, _rifles, _snipers,
+  _machine_guns, _grenades, _shield   which weapons bots buy
+  bot_chatter         normal, radio, minimal or off
+The window keeps them in a marked block at the end of
+server-files\cstrike\modes\base.cfg (and the copy in server\cstrike), so
+they survive a reinstall. Without the window, edit that block by hand.
+Handy console commands: bot_add, bot_add_t, bot_add_ct, bot_kick,
+bot_kick "<name>", bot_kill.
+
+Mode and map rules win over these: GunGame and Deathmatch set
+bot_deathmatch 1, Deathrun and surf maps run without bots, the rats maps
+(de_rats, de_rats4, cs_rats2) with 4 bots on Expert, because bots handle the
 jumps onto chairs and shelves badly there. See server-files\cstrike\modes\
 maps\de_rats.cfg to change that.
 
-The chat lines are in server\cstrike\addons\yapb\conf\lang\en_chat.cfg,
-grouped in [KILLED] (%v = victim), [WELCOME], [DEADCHAT] and [REPLIES].
-
-Fixing bot routes on a map (graph editor):
-  Bots walk along a node graph per map, downloaded from the YaPB database
-  or built by YaPB itself. Where bots get stuck, you can fix it in game.
-  As admin, on the map, in the game console:
-    yb graph acquire_editor   take the editor rights on this server
-    yb graph on noclip        show the nodes and fly through walls
-    yb graphmenu              menu: add node, create paths, autowaypoint
-    yb graph add              add a node where you stand
-    yb graph delete nearest   remove the node next to you
-    yb graph check            look for errors
-    yb graph save             save to addons\yapb\data\graph\<map>.graph
-    yb graph off              back to normal
-  Tip: the rats maps need nodes on top of chairs and shelves, connected
-  with jump paths (in the path menu).
+Navigation files:
+  zBot walks along a navigation mesh per map, server\cstrike\maps\<map>.nav.
+  When a bot joins a map without one, zBot analyzes the map by itself
+  (a few seconds to a few minutes, the round restarts afterwards) and saves
+  the file, so the next time the map loads at once.
+  To rebuild it, for example after a map update, run on that map in the
+  server console (or via RCON):
+    bot_nav_analyze
+  Deleting the .nav file has the same effect the next time bots join.
 
 
 BINDING KEYS (in the CS console, key ^)
@@ -324,7 +347,7 @@ CHANGING SETTINGS
 
   Server name, password      server\cstrike\server.cfg
   Rules per mode             server\cstrike\modes\*.cfg
-  Number of bots             yb_quota in the mode files
+  Number of bots             bot_quota (Server Control, Bots screen)
   Max players, ports         top of tools\start-server.ps1
   Hook for admins only       fun_hook_admin_only 1 in modes\base.cfg
 
@@ -376,7 +399,7 @@ TROUBLESHOOTING
     Install 7-Zip (7-zip.org) and run 3_UPDATE_MAPS.bat.
 
   Bots lag briefly on new maps:
-    Normal. YaPB learns new maps by itself the first time and saves that.
+    Normal. zBot analyzes a new map the first time and saves maps\<map>.nav.
 
   Logs:
     server\cstrike\addons\amxmodx\logs\

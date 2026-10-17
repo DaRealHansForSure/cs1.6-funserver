@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>CsServerControl</AssemblyName>
+    <RootNamespace>CsServerControl</RootNamespace>
+    <Product>CS 1.6 Server Control</Product>
+    <Version>2.0.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The tests reach the parsers without making them public API. -->
+    <InternalsVisibleTo Include="CsServerControl.Tests" />
+    <!-- The window and taskbar icon, the same crosshair as in the title bar. -->
+    <Resource Include="app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- The .NET (Core) build of HelixToolkit.Wpf.SharpDX 2.x: same API and namespace,
+         the HelixToolkit.Wpf.SharpDX package itself only ships a .NET Framework build. -->
+    <PackageReference Include="HelixToolkit.SharpDX.Core.Wpf" Version="2.27.3" />
+  </ItemGroup>
+
+</Project>
