@@ -9,13 +9,18 @@ public enum MapSource {
     Custom,
 }
 
-/// <summary>One installed map: where it came from, which modes play it, what it still lacks.</summary>
+/// <summary>One installed map: where it came from, which modes play it, what it still lacks. HasNav means a usable one.</summary>
 public sealed record MapLibraryEntry(
     string Name,
     MapSource Source,
     IReadOnlyList<string> ModeIds,
     bool HasNav,
-    long SizeBytes);
+    long SizeBytes,
+    bool IsNavOutdated = false,
+    IReadOnlyList<string>? MissingFiles = null) {
+    /// <summary>A model or sprite the map names is not on the server: loading it would stop the server.</summary>
+    public bool IsPlayable => MissingFiles == null || MissingFiles.Count == 0;
+}
 
 /// <summary>A file in custom-maps that "Update maps" has not installed yet.</summary>
 public sealed record WaitingMap(string FileName, bool IsArchive);
@@ -48,12 +53,15 @@ public static class MapLibrary {
         var entries = new List<MapLibraryEntry>();
         foreach (string bspFile in Directory.EnumerateFiles(paths.MapsDir, "*.bsp")) {
             string name = Path.GetFileNameWithoutExtension(bspFile).ToLowerInvariant();
+            NavFileState nav = NavFileScanner.Check(paths, name);
             entries.Add(new MapLibraryEntry(
                 name,
                 SourceOf(name, packMaps),
                 modesByMap.TryGetValue(name, out List<string>? modes) ? modes : [],
-                File.Exists(paths.NavFile(name)),
-                new FileInfo(bspFile).Length));
+                nav.IsUsable,
+                new FileInfo(bspFile).Length,
+                nav.IsOutdated,
+                MapResources.FindMissing(bspFile, paths.CstrikeDir)));
         }
         return entries.OrderBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase).ToList();
     }

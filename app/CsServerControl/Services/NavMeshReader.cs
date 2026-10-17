@@ -22,6 +22,28 @@ public static class NavMeshReader {
     private const uint NewestVersion = 5;
     private const int DirectionCount = 4;
 
+    /// <summary>
+    /// The size of the .bsp the mesh was built for (version 4 and newer), or
+    /// null for older files and anything unreadable. A different size than
+    /// the installed .bsp means the mesh belongs to another build of the map.
+    /// </summary>
+    public static long? ReadBspSize(string navFile) {
+        try {
+            using var stream = File.OpenRead(navFile);
+            using var reader = new BinaryReader(stream);
+            if (reader.ReadUInt32() != MagicNumber) {
+                return null;
+            }
+            uint version = reader.ReadUInt32();
+            if (version < 4 || version > NewestVersion) {
+                return null;
+            }
+            return reader.ReadUInt32();
+        } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) {
+            return null;
+        }
+    }
+
     public static NavMesh Load(string navFile) {
         using var stream = File.OpenRead(navFile);
         using var reader = new BinaryReader(stream);

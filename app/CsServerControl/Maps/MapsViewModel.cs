@@ -30,6 +30,9 @@ public sealed partial class MapLibraryRowViewModel : ObservableObject {
 
     public string ModesText {
         get {
+            if (!Entry.IsPlayable) {
+                return $"Not playable, needs {string.Join(", ", Entry.MissingFiles!)}";
+            }
             if (Entry.ModeIds.Count == 0) {
                 return "In no map list";
             }
@@ -50,7 +53,14 @@ public sealed partial class MapLibraryRowViewModel : ObservableObject {
         }
     }
 
-    public string NavText => HasNav ? "Present" : "Missing";
+    public string NavText {
+        get {
+            if (HasNav) {
+                return "Present";
+            }
+            return Entry.IsNavOutdated ? "Outdated" : "Missing";
+        }
+    }
     public string SizeText => (Entry.SizeBytes / 1024.0 / 1024.0).ToString("0.0", CultureInfo.InvariantCulture) + " MB";
 
     /// <summary>The first mode with a tile on the Server screen, where Pick takes the map.</summary>
@@ -118,6 +128,7 @@ public sealed partial class MapsViewModel : ObservableObject, IScreen {
         filters.Add(new MapFilter("Missing picture", row => !row.HasPicture));
         filters.Add(new MapFilter("In no map list", row => row.IsInNoMode));
         filters.Add(new MapFilter("Custom maps", row => row.Entry.Source == MapSource.Custom));
+        filters.Add(new MapFilter("Not playable", row => !row.Entry.IsPlayable));
         Filters = filters;
         _selectedFilter = filters[0];
     }

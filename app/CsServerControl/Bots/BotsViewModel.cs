@@ -41,6 +41,17 @@ public sealed partial class NavRowViewModel : ObservableObject {
     /// <summary>The state from the file alone, what Discard goes back to.</summary>
     public bool FileExists { get; set; }
 
+    /// <summary>The file belongs to another build of the map; shown as Outdated, rebuilt like a missing one.</summary>
+    public bool IsOutdated { get; set; }
+
+    /// <summary>The state the file alone gives, what Discard and a finished build go back to.</summary>
+    public NavState FileState => FileExists && !IsOutdated ? NavState.Present : NavState.Missing;
+
+    /// <summary>After IsOutdated changed without a state change: the status text has to follow.</summary>
+    public void RefreshStatus() {
+        OnPropertyChanged(nameof(StatusText));
+    }
+
     public bool IsGenerating => State == NavState.Generating;
     public bool HasStep => !string.IsNullOrEmpty(Step);
     public bool CanRunAction => State != NavState.Generating;
@@ -52,7 +63,7 @@ public sealed partial class NavRowViewModel : ObservableObject {
                 case NavState.Present:
                     return "✓ Present";
                 case NavState.Missing:
-                    return "! Missing";
+                    return IsOutdated ? "! Outdated" : "! Missing";
                 case NavState.Queued:
                     return "+ On Apply";
                 default:
@@ -398,7 +409,7 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
         PendingCounterTerroristAdds = 0;
         IsReconnectPending = false;
         foreach (NavRowViewModel row in NavRows.Where(row => row.State == NavState.Queued)) {
-            row.State = row.FileExists ? NavState.Present : NavState.Missing;
+            row.State = row.FileState;
         }
         UpdatePendingCount();
     }
@@ -453,7 +464,7 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
             return;
         }
         if (row.State == NavState.Queued) {
-            row.State = row.FileExists ? NavState.Present : NavState.Missing;
+            row.State = row.FileState;
         } else {
             row.State = NavState.Queued;
         }
@@ -552,8 +563,11 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
     private void FinishGenerating(NavRowViewModel row) {
         _buildingSince.Remove(row.MapName);
         row.Step = null;
-        row.FileExists = File.Exists(_connection.Paths.NavFile(row.MapName));
-        row.State = row.FileExists ? NavState.Present : NavState.Missing;
+        NavFileState file = NavFileScanner.Check(_connection.Paths, row.MapName);
+        row.FileExists = file.Exists;
+        row.IsOutdated = file.IsOutdated;
+        row.State = row.FileState;
+        row.RefreshStatus();
     }
 
     private void UpdateElapsed() {
@@ -639,7 +653,10 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
             NavRows.Clear();
             byName.Clear();
             foreach (NavFileState file in files) {
-                var row = new NavRowViewModel(file.MapName, file.Exists ? NavState.Present : NavState.Missing) { FileExists = file.Exists };
+                var row = new NavRowViewModel(file.MapName, file.IsUsable ? NavState.Present : NavState.Missing) {
+                    FileExists = file.Exists,
+                    IsOutdated = file.IsOutdated,
+                };
                 NavRows.Add(row);
                 byName[file.MapName] = row;
             }
@@ -648,9 +665,11 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
         foreach (NavFileState file in files) {
             NavRowViewModel row = byName[file.MapName];
             row.FileExists = file.Exists;
+            row.IsOutdated = file.IsOutdated;
             // Queued and running rows keep their state until Apply or the build ends.
             if (row.State == NavState.Present || row.State == NavState.Missing) {
-                row.State = file.Exists ? NavState.Present : NavState.Missing;
+                row.State = row.FileState;
+                row.RefreshStatus();
             }
         }
         UpdatePendingCount();

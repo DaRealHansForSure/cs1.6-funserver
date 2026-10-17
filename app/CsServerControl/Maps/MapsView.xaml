@@ -148,6 +148,10 @@
                                                 <Setter TargetName="Modes" Property="Foreground" Value="{StaticResource TextTertiary}" />
                                                 <Setter TargetName="Nav" Property="Foreground" Value="{StaticResource TextTertiary}" />
                                             </DataTrigger>
+                                            <!-- After IsInNoMode, so a broken map shows its warning instead of grey. -->
+                                            <DataTrigger Binding="{Binding Entry.IsPlayable}" Value="False">
+                                                <Setter TargetName="Modes" Property="Foreground" Value="{StaticResource Warning}" />
+                                            </DataTrigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

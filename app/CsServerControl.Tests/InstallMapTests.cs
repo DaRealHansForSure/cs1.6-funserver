@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.CompilerServices;
 using CsServerControl.Install;
+using CsServerControl.Services;
 using Xunit;
 
 namespace CsServerControl.Tests;
@@ -207,5 +208,45 @@ public class InstallMapTests : IDisposable {
     internal static string PackageRoot([CallerFilePath] string sourceFile = "") {
         // The test project sits in app\CsServerControl.Tests, two levels below the package.
         return Path.GetFullPath(Path.Combine(Path.GetDirectoryName(sourceFile)!, "..", ".."));
+    }
+
+    [Fact]
+    public void PutsALooseSpriteWhereTheMapExpectsIt() {
+        string cstrike = CreateFolder("cstrike");
+        string archive = CreateFolder("extracted");
+        File.WriteAllBytes(Path.Combine(archive, "surf_loose.bsp"),
+            BspWithEntities("{\n\"classname\" \"env_sprite\"\n\"model\" \"sprites/suicideexplode.spr\"\n}\n{\n\"model\" \"*3\"\n}\n"));
+        WriteFile(archive, "suicideexplode.spr", "sprite");
+
+        new MapContentCopier(cstrike).Install(archive);
+
+        Assert.Equal("sprite", ReadFile(cstrike, @"sprites\suicideexplode.spr"));
+        Assert.Empty(MapResources.FindMissing(Path.Combine(cstrike, @"maps\surf_loose.bsp"), cstrike));
+    }
+
+    [Fact]
+    public void ReadsOnlyModelAndSpriteFilesAMapNames() {
+        IReadOnlyList<string> files = MapResources.ParseRequiredFiles(
+            "{\n\"model\" \"*12\"\n}\n{\n\"model\" \"Models\\Tree.MDL\"\n\"message\" \"ambience/wind.wav\"\n}\n{\n\"model\" \"sprites/glow.spr\"\n}\n{\n\"model\" \"sprites/glow.spr\"\n}\n");
+
+        Assert.Equal(["models/tree.mdl", "sprites/glow.spr"], files);
+    }
+
+    /// <summary>A GoldSrc .bsp with only the header and the entity lump, enough for MapResources.</summary>
+    private static byte[] BspWithEntities(string entities) {
+        const int HeaderSize = 4 + 15 * 8;
+        byte[] text = System.Text.Encoding.ASCII.GetBytes(entities);
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, System.Text.Encoding.ASCII, leaveOpen: true)) {
+            writer.Write(30);
+            writer.Write(HeaderSize);
+            writer.Write(text.Length);
+            for (int lump = 1; lump < 15; lump++) {
+                writer.Write(0);
+                writer.Write(0);
+            }
+            writer.Write(text);
+        }
+        return stream.ToArray();
     }
 }

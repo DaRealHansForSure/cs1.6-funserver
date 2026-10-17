@@ -1,4 +1,5 @@
 using System.IO;
+using CsServerControl.Services;
 
 namespace CsServerControl.Install;
 
@@ -46,7 +47,28 @@ internal sealed class MapContentCopier {
             }
         }
 
+        foreach (string bspFile in bspFiles) {
+            CopyReferencedFiles(sourceDir, bspFile);
+        }
+
         return [.. bspFiles.Select(file => Path.GetFileNameWithoutExtension(file).ToLowerInvariant())];
+    }
+
+    /// <summary>
+    /// Some archives put a sprite or model loose next to the .bsp instead of
+    /// into sprites\ or models\ (surf_water-run). The map names the path it
+    /// expects, so a file of that name anywhere in the archive goes there.
+    /// </summary>
+    private void CopyReferencedFiles(string sourceDir, string bspFile) {
+        string installedBsp = Path.Combine(_cstrikeDir, "maps", Path.GetFileName(bspFile));
+        foreach (string missingPath in MapResources.FindMissing(installedBsp, _cstrikeDir)) {
+            string fileName = Path.GetFileName(missingPath);
+            string? found = FileTree.AllFiles(sourceDir)
+                .FirstOrDefault(file => Path.GetFileName(file).Equals(fileName, StringComparison.OrdinalIgnoreCase));
+            if (found != null) {
+                CopyMapFile(found, missingPath.Replace('/', Path.DirectorySeparatorChar));
+            }
+        }
     }
 
     private void CopyContentTree(string contentRoot) {

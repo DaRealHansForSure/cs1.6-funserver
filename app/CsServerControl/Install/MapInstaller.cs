@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
+using CsServerControl.Services;
 
 namespace CsServerControl.Install;
 
@@ -236,9 +237,21 @@ internal sealed class MapInstaller {
     public void UpdateMapCycles() {
         _log.Step("Building the map lists for the modes");
 
-        IEnumerable<string> installedMaps = FileTree.FilesWithExtension(_paths.MapsDir, ".bsp", recursive: false)
-            .Select(file => Path.GetFileNameWithoutExtension(file));
-        IReadOnlyDictionary<string, List<string>> mapsByMode = MapModes.BuildCycles(installedMaps);
+        // A map that names a model or sprite the server does not have stops
+        // the server when it loads (an engine error box, so it just hangs).
+        // It stays installed but out of every map list, so no vote or
+        // rotation can ever pick it.
+        List<string> playableMaps = [];
+        foreach (string bspFile in FileTree.FilesWithExtension(_paths.MapsDir, ".bsp", recursive: false)) {
+            string mapName = Path.GetFileNameWithoutExtension(bspFile);
+            IReadOnlyList<string> missing = MapResources.FindMissing(bspFile, _paths.CstrikeDir);
+            if (missing.Count > 0) {
+                _log.Problem($"{mapName} left out of the map lists, it needs {string.Join(", ", missing)}.");
+                continue;
+            }
+            playableMaps.Add(mapName);
+        }
+        IReadOnlyDictionary<string, List<string>> mapsByMode = MapModes.BuildCycles(playableMaps);
 
         foreach (string mode in MapModes.AllModes) {
             List<string> cycle = mapsByMode[mode];

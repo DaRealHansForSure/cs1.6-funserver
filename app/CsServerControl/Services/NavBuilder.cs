@@ -14,7 +14,9 @@ namespace CsServerControl.Services;
 public sealed class NavBuilder {
     public const int HelperPort = 27016;
 
-    private static readonly TimeSpan BuildTimeout = TimeSpan.FromMinutes(6);
+    // Big maps take long: de_survivor (6.4 MB .bsp) needed about 10 minutes,
+    // the old 6 minute limit killed it every time.
+    private static readonly TimeSpan BuildTimeout = TimeSpan.FromMinutes(20);
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(500);
     private static readonly TimeSpan StableFor = TimeSpan.FromSeconds(2);
 
@@ -36,6 +38,12 @@ public sealed class NavBuilder {
     /// because zBot only analyzes maps without a mesh. True when a new file exists.
     /// </summary>
     public async Task<bool> BuildAsync(string mapName, bool replace, CancellationToken cancellation = default) {
+        // The helper would stop at an invisible engine error box and only
+        // the timeout would end it.
+        if (MapResources.FindMissing(_paths.BspFile(mapName), _paths.CstrikeDir).Count > 0) {
+            return false;
+        }
+
         await _oneAtATime.WaitAsync(cancellation);
         Process? helper = null;
         try {

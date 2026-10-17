@@ -3,7 +3,14 @@ using System.Text.RegularExpressions;
 
 namespace CsServerControl.Services;
 
-public sealed record NavFileState(string MapName, bool Exists);
+/// <summary>
+/// IsOutdated: the file belongs to another build of the map (it came with a
+/// map download, or the .bsp was replaced). zBot then only warns and the
+/// bots walk on wrong data, so it counts as missing.
+/// </summary>
+public sealed record NavFileState(string MapName, bool Exists, bool IsOutdated = false) {
+    public bool IsUsable => Exists && !IsOutdated;
+}
 
 /// <summary>
 /// Which maps have a zBot navigation mesh (maps\&lt;map&gt;.nav), and what the
@@ -14,8 +21,24 @@ public sealed record NavFileState(string MapName, bool Exists);
 public static partial class NavFileScanner {
     public static IReadOnlyList<NavFileState> Scan(PackagePaths paths) {
         return MapCycleReader.ReadAllCycles(paths.CstrikeDir)
-            .Select(map => new NavFileState(map, File.Exists(paths.NavFile(map))))
+            .Select(map => Check(paths, map))
             .ToList();
+    }
+
+    public static NavFileState Check(PackagePaths paths, string mapName) {
+        string navFile = paths.NavFile(mapName);
+        if (!File.Exists(navFile)) {
+            return new NavFileState(mapName, Exists: false);
+        }
+        return new NavFileState(mapName, Exists: true, IsOutdated(navFile, paths.BspFile(mapName)));
+    }
+
+    internal static bool IsOutdated(string navFile, string bspFile) {
+        long? builtFor = NavMeshReader.ReadBspSize(navFile);
+        if (builtFor == null || !File.Exists(bspFile)) {
+            return false;
+        }
+        return builtFor.Value != new FileInfo(bspFile).Length;
     }
 
     /// <summary>The step zBot is on, for example "Merging navigation areas", or null.</summary>

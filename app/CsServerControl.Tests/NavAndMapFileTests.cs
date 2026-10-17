@@ -124,4 +124,31 @@ public class NavAndMapFileTests {
         Assert.True(ServerProcess.IsNavHelperCommandLine(helper));
         Assert.False(ServerProcess.IsNavHelperCommandLine(gameServer));
     }
+
+    [Fact]
+    public void ANavFileForAnotherBuildOfTheMapIsOutdated() {
+        string folder = Path.Combine(Path.GetTempPath(), "cs16-nav-outdated-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try {
+            string bspFile = Path.Combine(folder, "map.bsp");
+            string navFile = Path.Combine(folder, "map.nav");
+            File.WriteAllBytes(bspFile, new byte[1000]);
+
+            WriteNavHeader(navFile, bspSize: 1000);
+            Assert.False(NavFileScanner.IsOutdated(navFile, bspFile));
+
+            WriteNavHeader(navFile, bspSize: 999);
+            Assert.True(NavFileScanner.IsOutdated(navFile, bspFile));
+            Assert.Equal(999, NavMeshReader.ReadBspSize(navFile));
+        } finally {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    private static void WriteNavHeader(string navFile, uint bspSize) {
+        using var writer = new BinaryWriter(File.Create(navFile));
+        writer.Write(0xFEEDFACEu);
+        writer.Write(5u);
+        writer.Write(bspSize);
+    }
 }
