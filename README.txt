@@ -12,16 +12,16 @@ GETTING STARTED (3 STEPS)
 1. Unpack the folder to a permanent location, e.g. C:\Games\CS16-FunServer
    (do not run it directly from the Downloads folder).
 
-2. Double-click 1_INSTALL.bat.
-   It opens 4_SERVER_CONTROL.exe on its Install screen and installs:
+2. Double-click 4_SERVER_CONTROL.exe. Before the first install it opens on
+   the Install screen. Press "Install or repair", which installs:
    - the official server via SteamCMD and all mods
      (about 600 MB, needs internet once),
    - bots, fun plugins and the map pack.
    It asks for your player name and an admin password for the admin menus.
 
-3. Double-click 2_START_SERVER.bat (or just open 4_SERVER_CONTROL.exe and
-   press Start). The bar at the top shows the address, e.g.
-   192.168.1.50:27015. The server shows up under "LAN" in everyone's game.
+3. Press Start on the Server screen. The bar at the top shows the address,
+   e.g. 192.168.1.50:27015. The server shows up under "LAN" in everyone's
+   game.
 
 On the first start the window offers to add the Windows Firewall rules
 (Windows asks for administrator rights once). Without them, click "Allow
@@ -30,9 +30,9 @@ access" for private networks when Windows asks about hlds.exe.
 Other players only need a normal CS 1.6 (Steam). Missing maps and sounds
 are downloaded quickly from the server automatically when they connect.
 
-3_UPDATE_MAPS.bat updates only the maps (also the Install screen). Every
-.bat file only opens 4_SERVER_CONTROL.exe in the right place; everything
-runs inside that one program, nothing else needs to be installed.
+"Update maps" on the Install screen updates only the maps. Everything runs
+inside that one program, nothing else needs to be installed. For desktop
+shortcuts the exe also takes --install, --start and --update-maps.
 
 
 SERVER CONTROL WINDOW
@@ -100,7 +100,7 @@ so it never pops up or takes the focus from a game.
 
 The window talks to the server over RCON with a random password stored in
 %APPDATA%\CsServerControl\settings.json (and in server\cstrike\local.cfg,
-so a server started with 2_START_SERVER.bat accepts the window too). The
+so a server started outside the window accepts it too). The
 status is read with the normal server query, so the game logs do not fill
 up with RCON lines.
 
@@ -112,7 +112,8 @@ stock maps show their radar image. For any other map put a <mapname>.jpg
 or .png into tools\previews\, the installer never replaces it.
 
 The exe is built from the source in app\ with
-  powershell -ExecutionPolicy Bypass -File tools\build-app.ps1
+  dotnet publish app\CsServerControl -c Release
+(runs the tests first; add -p:PackRelease=true for release\CS16-FunServer.zip)
 which needs the .NET 10 SDK once (winget install Microsoft.DotNet.SDK.10).
 
 
@@ -194,7 +195,7 @@ to everybody. Dying starts again at 0. Off: fun_streaks_enabled 0
 Not on knife, HE, deathrun and surf maps, those have their own rules.
 
 DEATHRUN
-  How to start: pick 5) Deathrun in 2_START_SERVER.bat, vote for it with
+  How to start: pick Deathrun on the Server screen, vote for it with
   /mode, or as admin /fun -> Switch mode -> Deathrun.
   Maps: deathrun_temple, deathrun_dojo, deathrun_projetocs,
   deathrun_forest, deathrun_crash_egypt, deathrun_cxx-inc, deathrun_death
@@ -329,11 +330,11 @@ The installation downloads these fun maps from GameBanana:
 All standard CS 1.6 maps are included as well.
 
 Your own maps: put .bsp files or whole .zip/.rar/.7z archives into the
-"custom-maps" folder and run 3_UPDATE_MAPS.bat. Maps are assigned to the
-modes by their name (zm_ = Zombie, deathrun_ = Deathrun, fy_/aim_/awp_
-etc. = GunGame and Deathmatch, surf_ = Classic and Deathmatch, everything
-else = Classic). Knife and grenade maps (35hp_, ka_, he_) only run in
-Classic.
+"custom-maps" folder and press "Update maps" on the Install screen. Maps
+are assigned to the modes by their name (zm_ = Zombie, deathrun_ =
+Deathrun, fy_/aim_/awp_ etc. = GunGame and Deathmatch, surf_ = Classic and
+Deathmatch, everything else = Classic). Knife and grenade maps (35hp_, ka_,
+he_) only run in Classic.
 
 The map list for the download is in tools\maps.csv.
 
@@ -353,7 +354,7 @@ QUAKE SOUNDS
 the other announcements play out loud. The installer downloads two sound
 packs from GameBanana and puts the files into server\cstrike\sound\misc\
 (plus djeyl\grenade.wav). Other players download them automatically when
-they connect. Needs 7-Zip (7-zip.org) to unpack the .rar packs.
+they connect.
 
 Your own sounds win: a file that already exists there is never replaced.
 To use another sound, overwrite it with a .wav of the same name (22050 Hz,
@@ -377,7 +378,7 @@ CHANGING SETTINGS
   Max players                Server Control, Server screen, Settings
   Hook for admins only       fun_hook_admin_only 1 in modes\base.cfg
 
-1_INSTALL.bat (or Install or repair on the Install screen) can be run again
+"Install or repair" on the Install screen can be run again
 at any time.
 Note: this copies the files from server-files again. So it is best to make
 your own changes directly in server-files\cstrike.
@@ -413,14 +414,14 @@ TROUBLESHOOTING
 
   Players download maps very slowly:
     The fast download window is closed or blocked by the firewall. Restart
-    the server with 2_START_SERVER.bat and allow TCP 27080.
+    the server from the Server screen and allow TCP 27080.
 
   Server not visible on the LAN:
     Check the firewall (allow incoming UDP 27015 and TCP 27080)
     or connect directly with  connect IP:27015
 
   Map download fails (.rar/.7z):
-    Install 7-Zip (7-zip.org) and run 3_UPDATE_MAPS.bat.
+    Press "Update maps" on the Install screen again.
 
   Bots lag briefly on new maps:
     Normal. zBot analyzes a new map the first time and saves maps\<map>.nav.

@@ -122,8 +122,8 @@ public sealed partial class ShellViewModel : ObservableObject {
     }
 
     /// <summary>
-    /// What a .bat file asked for: 1_INSTALL.bat installs, 3_UPDATE_MAPS.bat
-    /// updates the maps, 2_START_SERVER.bat starts the server. A package that
+    /// What the command line asked for: --install installs, --update-maps
+    /// updates the maps, --start starts the server. A package that
     /// is not installed yet always opens on the Install screen.
     /// </summary>
     public void RunStartupCommand(AppCommand command) {

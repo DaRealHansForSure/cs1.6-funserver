@@ -530,7 +530,7 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
 
         foreach (NavRowViewModel row in queued) {
             if (!_navBuilder.IsAvailable) {
-                ApplyError = "navbuild.cfg is missing. Run 1_INSTALL.bat once to update the server files.";
+                ApplyError = "navbuild.cfg is missing. Run Rebuild plugins on the Install screen to update the server files.";
                 FinishGenerating(row);
                 continue;
             }

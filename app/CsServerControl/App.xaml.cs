@@ -7,7 +7,7 @@ using CsServerControl.Shell;
 namespace CsServerControl;
 
 public partial class App : Application {
-    // One window per PC: a second start (a .bat double-clicked while the
+    // One window per PC: a second start (the exe double-clicked while the
     // window is open) brings the open window forward instead.
     private const string WindowMutexName = "CsServerControl.Window";
 

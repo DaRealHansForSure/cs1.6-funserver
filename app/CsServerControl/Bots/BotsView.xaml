@@ -183,7 +183,7 @@
                                     <TextBlock Grid.Column="2" Text="Action" Style="{StaticResource HintText}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
-                            <TextBlock Text="No mapcycle files found. Run 1_INSTALL.bat." Style="{StaticResource HintText}" Margin="4,12,0,0"
+                            <TextBlock Text="No mapcycle files found. Run Install or repair on the Install screen." Style="{StaticResource HintText}" Margin="4,12,0,0"
                                        Visibility="{Binding NavRows.Count, Converter={StaticResource VisibleWhenZero}}" />
                             <!-- Own scroll area: with 60 maps the table would push Active bots out of sight. -->
                             <ScrollViewer MaxHeight="{StaticResource NavTableMaxHeight}" VerticalScrollBarVisibility="Auto" Focusable="False">

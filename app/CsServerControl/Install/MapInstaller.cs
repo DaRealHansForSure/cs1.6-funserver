@@ -100,7 +100,7 @@ internal sealed class MapInstaller {
         }
 
         if (failedMaps.Count > 0) {
-            _log.Problem($"Not installed: {string.Join(", ", failedMaps)}. Try again later with 3_UPDATE_MAPS.bat.");
+            _log.Problem($"Not installed: {string.Join(", ", failedMaps)}. Try again later with Update maps.");
         }
     }
 

@@ -15,7 +15,7 @@ custom-maps/*
 *.mdmp
 
 # Server Control app: build output and the published exe (rebuilt with
-# tools\build-app.ps1), plus the downloaded map previews.
+# dotnet publish), plus the downloaded map previews.
 app/**/bin/
 app/**/obj/
 app/publish/

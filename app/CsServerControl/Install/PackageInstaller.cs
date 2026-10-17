@@ -33,7 +33,7 @@ public sealed class PackageInstaller {
         _firewall = new FirewallSetup(_log);
     }
 
-    /// <summary>The full install or repair, what 1_INSTALL.bat did.</summary>
+    /// <summary>The full install or repair.</summary>
     public async Task InstallServerAsync(CancellationToken cancellation) {
         Directory.CreateDirectory(_paths.ServerDir);
         Directory.CreateDirectory(_paths.WorkDir);
@@ -62,7 +62,7 @@ public sealed class PackageInstaller {
 
     /// <summary>
     /// Only the maps (map pack plus the custom-maps folder) and the map lists,
-    /// what 3_UPDATE_MAPS.bat (-MapsOnly) did.
+    /// also started with --update-maps.
     /// </summary>
     public async Task InstallMapsAsync(CancellationToken cancellation) {
         if (!_paths.Package.IsServerInstalled) {

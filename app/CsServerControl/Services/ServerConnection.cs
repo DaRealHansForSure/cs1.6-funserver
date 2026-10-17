@@ -184,7 +184,7 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
         bool isPreferredInstalled = preferredMap != null && System.IO.File.Exists(Paths.BspFile(preferredMap));
         string? startMap = isPreferredInstalled ? preferredMap : Process.FirstMapOfMode(modeId);
         if (startMap == null) {
-            AddConsoleLine(new ConsoleLine($"No installed map for mode {modeId}. Run 3_UPDATE_MAPS.bat.", ConsoleLineKind.Normal));
+            AddConsoleLine(new ConsoleLine($"No installed map for mode {modeId}. Run Update maps on the Install screen.", ConsoleLineKind.Normal));
             return;
         }
 
@@ -251,7 +251,7 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
         try {
             return await Rcon.SendAsync(command);
         } catch (RconException exception) when (exception.Message.Contains("password", StringComparison.OrdinalIgnoreCase) && !_triedLocalConfigPassword) {
-            // A server that 2_START_SERVER.bat started uses the password in
+            // A server started outside this window uses the password in
             // local.cfg. Try that one once, then keep using whatever worked.
             _triedLocalConfigPassword = true;
             string? localPassword = Process.ReadLocalConfigPassword();
@@ -331,7 +331,7 @@ public sealed partial class ServerConnection : ObservableObject, IDisposable {
 
     /// <summary>
     /// The only RCON calls the app makes on its own, once per server start:
-    /// silence the engine's RCON echo (a server from 2_START_SERVER.bat lacks
+    /// silence the engine's RCON echo (a server started outside this window lacks
     /// the command line switch) and read the mode when nothing told it yet.
     /// </summary>
     private async Task AttachSetupAsync() {

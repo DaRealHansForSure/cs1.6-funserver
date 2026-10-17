@@ -9,7 +9,7 @@ namespace CsServerControl.Services;
 
 /// <summary>
 /// Starts and stops hlds.exe and the fast download server, or attaches to an
-/// hlds.exe of this package that 2_START_SERVER.bat started.
+/// hlds.exe of this package that is already running (started by hand or by an earlier window).
 /// </summary>
 public sealed class ServerProcess {
     public const int GamePort = 27015;
@@ -35,13 +35,18 @@ public sealed class ServerProcess {
     private Process? _fastDownload;
     private Process? _tv;
 
+    // The nav build helper is the same hlds.exe, so the path alone does not
+    // tell which one is the game server. The command line does, but reading
+    // it goes through WMI, so every process id is judged only once.
+    private readonly Dictionary<int, bool> _isGameServerById = [];
+
     public ServerProcess(PackagePaths paths) {
         _paths = paths;
     }
 
     public bool IsRunning => FindHlds() != null;
 
-    /// <summary>When hlds.exe was started, also for a server started by the .bat.</summary>
+    /// <summary>When hlds.exe was started, also for a server started outside this window.</summary>
     public DateTime? StartedAt {
         get {
             try {
@@ -113,6 +118,7 @@ public sealed class ServerProcess {
             UseShellExecute = true,
         });
         if (hlds != null) {
+            RememberProcess(hlds.Id, isGameServer: true);
             StartFastDownload(hlds.Id);
         }
     }
@@ -176,7 +182,7 @@ public sealed class ServerProcess {
 
         string hltvExe = Path.Combine(_paths.ServerDir, "hltv.exe");
         if (!File.Exists(hltvExe)) {
-            throw new InvalidOperationException("hltv.exe is missing. Run 1_INSTALL.bat to repair the server.");
+            throw new InvalidOperationException("hltv.exe is missing. Run Install or repair on the Install screen.");
         }
 
         _tv = Process.Start(new ProcessStartInfo {
@@ -245,11 +251,14 @@ public sealed class ServerProcess {
 
     /// <summary>
     /// Adds the inbound rules through an elevated cmd. The live feed port is
-    /// left closed on purpose: it only ever talks to this PC.
+    /// left closed on purpose: it only ever talks to this PC. Each rule is
+    /// deleted before it is added, so rules that already exist are not doubled.
     /// </summary>
     public static void AddFirewallRules() {
-        IEnumerable<string> commands = FirewallRules.Select(rule =>
-            $"netsh advfirewall firewall add rule name=\"{rule.Name}\" dir=in action=allow protocol={rule.Protocol} localport={rule.Port}");
+        IEnumerable<string> commands = FirewallRules.SelectMany(rule => new[] {
+            $"netsh advfirewall firewall delete rule name=\"{rule.Name}\" >nul",
+            $"netsh advfirewall firewall add rule name=\"{rule.Name}\" dir=in action=allow protocol={rule.Protocol} localport={rule.Port} >nul",
+        });
         try {
             Process.Start(new ProcessStartInfo {
                 FileName = "cmd.exe",
@@ -266,7 +275,7 @@ public sealed class ServerProcess {
     /// <summary>
     /// fun_modes runs local.cfg after the mode configs on every map start, so
     /// its rcon_password would win over the command line. Keeping both the
-    /// same also lets a server started by 2_START_SERVER.bat accept this app.
+    /// same also lets a server started outside this window accept this app.
     /// </summary>
     public void WriteLocalConfigPassword(string rconPassword) {
         var settings = new LocalSettings(_paths.LocalConfigFile);
@@ -274,21 +283,83 @@ public sealed class ServerProcess {
         settings.Save();
     }
 
-    /// <summary>The password in local.cfg, used by a server that 2_START_SERVER.bat started.</summary>
+    /// <summary>The password in local.cfg, used by a server started outside this window.</summary>
     public string? ReadLocalConfigPassword() {
         return new LocalSettings(_paths.LocalConfigFile).Get("rcon_password");
     }
 
+    /// <summary>The game server: an hlds.exe of this package that is not the nav build helper.</summary>
     private Process? FindHlds() {
-        foreach (Process process in Process.GetProcessesByName("hlds")) {
-            try {
-                string? path = process.MainModule?.FileName;
-                if (path != null && string.Equals(Path.GetFullPath(path), Path.GetFullPath(_paths.HldsExe), StringComparison.OrdinalIgnoreCase)) {
-                    return process;
-                }
-            } catch (Exception exception) when (exception is Win32Exception or InvalidOperationException) {
-                // A process that ended or belongs to another user is not ours.
+        Process[] running = Process.GetProcessesByName("hlds");
+        lock (_isGameServerById) {
+            ForgetEndedProcesses(running);
+        }
+
+        foreach (Process process in running) {
+            if (IsOurHlds(process) && IsGameServer(process.Id)) {
+                return process;
             }
+        }
+        return null;
+    }
+
+    private bool IsOurHlds(Process process) {
+        try {
+            string? path = process.MainModule?.FileName;
+            return path != null && string.Equals(Path.GetFullPath(path), Path.GetFullPath(_paths.HldsExe), StringComparison.OrdinalIgnoreCase);
+        } catch (Exception exception) when (exception is Win32Exception or InvalidOperationException) {
+            // A process that ended or belongs to another user is not ours.
+            return false;
+        }
+    }
+
+    private bool IsGameServer(int processId) {
+        lock (_isGameServerById) {
+            if (_isGameServerById.TryGetValue(processId, out bool known)) {
+                return known;
+            }
+        }
+
+        string? commandLine = ReadCommandLine(processId);
+        if (commandLine == null) {
+            // Ended in between, or WMI is unavailable. Judge it again next time
+            // instead of remembering a guess.
+            return true;
+        }
+        bool isGameServer = !IsNavHelperCommandLine(commandLine);
+        RememberProcess(processId, isGameServer);
+        return isGameServer;
+    }
+
+    internal static bool IsNavHelperCommandLine(string commandLine) {
+        return commandLine.Contains($"-port {NavBuilder.HelperPort}", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RememberProcess(int processId, bool isGameServer) {
+        lock (_isGameServerById) {
+            _isGameServerById[processId] = isGameServer;
+        }
+    }
+
+    private void ForgetEndedProcesses(Process[] running) {
+        // Windows reuses process ids, an old verdict must not stick to a new process.
+        var runningIds = running.Select(process => process.Id).ToHashSet();
+        foreach (int processId in _isGameServerById.Keys.Where(id => !runningIds.Contains(id)).ToList()) {
+            _isGameServerById.Remove(processId);
+        }
+    }
+
+    private static string? ReadCommandLine(int processId) {
+        try {
+            using var searcher = new System.Management.ManagementObjectSearcher(
+                $"SELECT CommandLine FROM Win32_Process WHERE ProcessId = {processId}");
+            foreach (System.Management.ManagementBaseObject process in searcher.Get()) {
+                using (process) {
+                    return process["CommandLine"] as string;
+                }
+            }
+        } catch (Exception exception) when (exception is System.Management.ManagementException or System.Runtime.InteropServices.COMException or UnauthorizedAccessException) {
+            // Falls through to "unknown".
         }
         return null;
     }

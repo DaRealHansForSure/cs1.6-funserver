@@ -9,7 +9,7 @@ using CsServerControl.Shell;
 namespace CsServerControl.Install;
 
 /// <summary>
-/// The Install screen: what 1_INSTALL.bat and 3_UPDATE_MAPS.bat did with
+/// The Install screen: what the old install and map update scripts did with
 /// PowerShell, now inside the app, with the installer's log on screen.
 /// </summary>
 public sealed partial class InstallViewModel : ObservableObject, IScreen, IInstallPrompts {

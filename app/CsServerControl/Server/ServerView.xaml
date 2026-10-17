@@ -136,7 +136,7 @@
                                 <TextBlock DockPanel.Dock="Right" Text="{Binding MapsInfo}" Style="{StaticResource HintText}" />
                                 <TextBlock Text="{Binding MapsTitle}" Style="{StaticResource CardTitleText}" />
                             </DockPanel>
-                            <TextBlock Text="No mapcycle file for this mode. Run 1_INSTALL.bat." Style="{StaticResource HintText}" Margin="0,0,0,12">
+                            <TextBlock Text="No mapcycle file for this mode. Run Install or repair on the Install screen." Style="{StaticResource HintText}" Margin="0,0,0,12">
                                 <TextBlock.Visibility>
                                     <Binding Path="Maps.Count">
                                         <Binding.Converter>

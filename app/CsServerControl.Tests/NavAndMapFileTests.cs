@@ -115,4 +115,13 @@ public class NavAndMapFileTests {
         Assert.True(entities["info_player_start"] >= 10);
         Assert.True(entities.ContainsKey("func_bomb_target"));
     }
+
+    [Fact]
+    public void TellsTheNavHelperFromTheGameServer() {
+        const string helper = "hlds.exe -console -game cstrike -port 27016 +ip 127.0.0.1 +maxplayers 2 +map de_dust";
+        const string gameServer = "hlds.exe -console -condebug -game cstrike -port 27015 +ip 192.168.1.50 +map de_dust2";
+
+        Assert.True(ServerProcess.IsNavHelperCommandLine(helper));
+        Assert.False(ServerProcess.IsNavHelperCommandLine(gameServer));
+    }
 }

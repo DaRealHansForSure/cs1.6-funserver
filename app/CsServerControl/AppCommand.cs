@@ -5,11 +5,11 @@ namespace CsServerControl;
 public enum AppCommandKind {
     /// <summary>Plain start: just the window.</summary>
     Window,
-    /// <summary>1_INSTALL.bat: the window, which installs or repairs the server right away.</summary>
+    /// <summary>--install: the window, which installs or repairs the server right away.</summary>
     Install,
-    /// <summary>3_UPDATE_MAPS.bat: the window, which updates the maps right away.</summary>
+    /// <summary>--update-maps: the window, which updates the maps right away.</summary>
     UpdateMaps,
-    /// <summary>2_START_SERVER.bat: the window, which starts the server right away.</summary>
+    /// <summary>--start: the window, which starts the server right away.</summary>
     Start,
     /// <summary>The hidden fast download server next to hlds.exe, no window at all.</summary>
     FastDownload,
