@@ -1,6 +1,8 @@
 # Created by the installer at runtime. server\ also holds the admin
 # password in cstrike\addons\amxmodx\configs\users.ini.
-server/
+# Anchored to the root: "server/" alone also matched app/CsServerControl/Server
+# on Windows (case-insensitive) and kept the Server screen out of git.
+/server/
 tools/steamcmd/
 tools/downloads/
 tools/work/
