@@ -68,6 +68,12 @@ time left, LAN address and uptime.
              server name, join password, max players (from the next
              start), fun rounds on/off and how often, hook speed, hook for
              admins only. TV: see below.
+             Game rules, per mode (draft, saved in
+             server\cstrike\local_<mode>.cfg): map time, round time,
+             freeze time, buy time, start money, max rounds, C4 timer,
+             gravity, friendly fire. An empty field keeps the mode's own
+             value, which the field shows. A value for Classic never
+             changes GunGame, and a running server gets it at once.
   Bots       zBot settings: difficulty, fill count, teams, weapons, radio
              and chat. Everything is a draft until Apply, also kicking a
              bot, adding bots and building navigation files; Discard drops

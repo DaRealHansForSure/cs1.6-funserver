@@ -152,6 +152,40 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Game rules: per mode, part of the draft, saved in local_<mode>.cfg on Apply. -->
+                    <Border Style="{StaticResource Card}" Margin="0,16,0,0" DataContext="{Binding Rules}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,12">
+                                <TextBlock DockPanel.Dock="Right" Text="{Binding FileHint}" Style="{StaticResource HintText}" VerticalAlignment="Center" />
+                                <TextBlock Text="Game rules" Style="{StaticResource CardTitleText}" VerticalAlignment="Center" />
+                                <ComboBox Style="{StaticResource Select}" Width="180" Margin="16,0,0,0" HorizontalAlignment="Left"
+                                          ItemsSource="{Binding Modes}" SelectedItem="{Binding SelectedMode}" DisplayMemberPath="Title"
+                                          AutomationProperties.Name="Game rules for mode" />
+                            </DockPanel>
+                            <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="2" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,12,12">
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource LabelText}" Margin="0,0,0,6" />
+                                            <TextBox Style="{StaticResource TextInput}" Tag="{Binding Placeholder}"
+                                                     Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{Binding Label}"
+                                                     Visibility="{Binding IsText, Converter={StaticResource VisibleWhenTrue}}" />
+                                            <ComboBox Style="{StaticResource Select}" ItemsSource="{Binding Choices}" SelectedItem="{Binding SelectedChoice}"
+                                                      DisplayMemberPath="Label" AutomationProperties.Name="{Binding Label}"
+                                                      Visibility="{Binding IsOnOff, Converter={StaticResource VisibleWhenTrue}}" />
+                                            <TextBlock Text="{Binding Hint}" Style="{StaticResource HintText}" Margin="0,4,0,0" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Mode -->
                     <Border Style="{StaticResource Card}" Margin="0,16,0,0">
                         <StackPanel>

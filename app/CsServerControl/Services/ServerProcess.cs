@@ -369,6 +369,23 @@ public sealed class ServerProcess {
         return isGameServer;
     }
 
+    /// <summary>
+    /// Ends nav build helpers of this package. Only the window starts them, so
+    /// one that runs while the window opens or closes is left over: it sits
+    /// on the invisible desktop and would run forever otherwise.
+    /// </summary>
+    public void StopNavHelpers() {
+        foreach (Process process in Process.GetProcessesByName("hlds")) {
+            if (!IsOurHlds(process)) {
+                continue;
+            }
+            string? commandLine = ReadCommandLine(process.Id);
+            if (commandLine != null && IsNavHelperCommandLine(commandLine)) {
+                TryKill(process);
+            }
+        }
+    }
+
     internal static bool IsNavHelperCommandLine(string commandLine) {
         return commandLine.Contains($"-port {NavBuilder.HelperPort}", StringComparison.OrdinalIgnoreCase);
     }

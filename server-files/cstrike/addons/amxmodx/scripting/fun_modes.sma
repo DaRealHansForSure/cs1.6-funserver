@@ -99,8 +99,9 @@ public plugin_cfg()
     // never overwrites it, and it runs last so it wins over the mode defaults.
     // On the first map the engine runs server.cfg after this, which would
     // reset hostname and friends, so local.cfg runs once more a second later.
-    if (file_exists(LOCAL_CONFIG)) {
-        server_cmd("exec %s", LOCAL_CONFIG);
+    // local_<mode>.cfg follows with the game rules the host set for this mode
+    // only (round time, buy time ...), so they win over the mode defaults.
+    if (execLocalConfigs()) {
         set_task(LOCAL_CONFIG_REAPPLY_DELAY_SECONDS, "reapplyLocalConfig", TASK_LOCAL_CONFIG);
     }
     server_exec();
@@ -110,7 +111,28 @@ public plugin_cfg()
 
 public reapplyLocalConfig()
 {
-    server_cmd("exec %s", LOCAL_CONFIG);
+    execLocalConfigs();
+}
+
+/**
+ * Runs local.cfg and then local_<mode>.cfg of the active mode, each only
+ * when it exists. Returns true when at least one ran.
+ */
+bool:execLocalConfigs()
+{
+    new bool:didRun = false;
+    if (file_exists(LOCAL_CONFIG)) {
+        server_cmd("exec %s", LOCAL_CONFIG);
+        didRun = true;
+    }
+
+    new modeConfig[64];
+    formatex(modeConfig, charsmax(modeConfig), "local_%s.cfg", gActiveMode);
+    if (file_exists(modeConfig)) {
+        server_cmd("exec %s", modeConfig);
+        didRun = true;
+    }
+    return didRun;
 }
 
 /**

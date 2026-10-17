@@ -118,6 +118,12 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
                 OnPropertyChanged(nameof(IsDirty));
             }
         };
+        Rules = new GameRulesViewModel(connection);
+        Rules.PropertyChanged += (_, e) => {
+            if (e.PropertyName == nameof(GameRulesViewModel.IsChanged)) {
+                OnPropertyChanged(nameof(IsDirty));
+            }
+        };
         Round = new RoundActionsViewModel(connection);
         // A picture rendered on the Maps screen shows up here at once.
         MapThumbnails.PictureChanged += OnPictureChanged;
@@ -136,6 +142,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
 
     public ServerConnection Connection => _connection;
     public ServerSettingsViewModel Settings { get; }
+    public GameRulesViewModel Rules { get; }
     public RoundActionsViewModel Round { get; }
     public ObservableCollection<ModeTileViewModel> ModeTiles { get; } = [];
     public ObservableCollection<MapRowViewModel> Maps { get; } = [];
@@ -151,7 +158,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
     /// Settings can be saved any time; mode and map only differ from a
     /// running server.
     /// </summary>
-    public bool IsDirty => Settings.IsChanged || IsModeOrMapDirty;
+    public bool IsDirty => Settings.IsChanged || Rules.IsChanged || IsModeOrMapDirty;
 
     private bool IsModeOrMapDirty {
         get {
@@ -205,6 +212,12 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
         if (!await Settings.ApplyAsync()) {
             return;
         }
+        // The rules too: a map change below then starts with them.
+        string? rulesError = await Rules.ApplyAsync();
+        if (rulesError != null) {
+            Settings.Error = rulesError;
+            return;
+        }
 
         if (IsModeOrMapDirty && PickedMap != null) {
             string modeId = PickedMode.Mode.Id;
@@ -222,6 +235,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
     private void Discard() {
         HasDraft = false;
         Settings.Load();
+        Rules.Load();
         SyncPicksToServer();
         OnPropertyChanged(nameof(IsDirty));
     }
@@ -303,6 +317,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
     }
 
     private void OnModePicked(ModeTileViewModel tile) {
+        Rules.FollowMode(tile.Mode.Id);
         foreach (ModeTileViewModel other in ModeTiles.Where(other => other != tile)) {
             other.IsPicked = false;
         }

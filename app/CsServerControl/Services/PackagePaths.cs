@@ -25,6 +25,15 @@ public sealed class PackagePaths {
     // -condebug writes into the engine folder, not into the mod folder.
     public string ConsoleLogFile => Path.Combine(ServerDir, "qconsole.log");
     public string LocalConfigFile => Path.Combine(CstrikeDir, "local.cfg");
+
+    /// <summary>The game rules the host set for one mode; fun_modes runs it after local.cfg in that mode only.</summary>
+    public string LocalModeConfigFile(string modeId) {
+        return Path.Combine(CstrikeDir, $"local_{modeId}.cfg");
+    }
+
+    public string ModeConfigFile(string modeId) {
+        return Path.Combine(CstrikeDir, "modes", modeId + ".cfg");
+    }
     public string GameLogsDir => Path.Combine(CstrikeDir, "logs");
     public string AmxLogsDir => Path.Combine(CstrikeDir, "addons", "amxmodx", "logs");
     public string BotProfileFile => Path.Combine(CstrikeDir, "BotProfile.db");
