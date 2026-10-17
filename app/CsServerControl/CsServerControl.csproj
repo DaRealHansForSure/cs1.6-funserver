@@ -4,6 +4,10 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <!-- HelixToolkit loads WindowsFormsIntegration when the viewport starts. A
+         self-contained publish only bundles what is referenced, WPF alone
+         leaves that assembly out and the window fails at startup. -->
+    <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>CsServerControl</AssemblyName>
@@ -17,6 +21,9 @@
   <ItemGroup>
     <!-- The tests reach the parsers without making them public API. -->
     <InternalsVisibleTo Include="CsServerControl.Tests" />
+    <!-- Only the assembly is needed; its global usings would clash with WPF types. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
     <!-- The window and taskbar icon, the same crosshair as in the title bar. -->
     <Resource Include="app.ico" />
   </ItemGroup>
