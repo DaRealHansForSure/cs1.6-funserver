@@ -18,29 +18,10 @@
 
 #define TASK_VOTE_END 4100
 #define TASK_MAP_CHANGE 4200
-#define TASK_BOT_QUOTA 4300
 #define LOCAL_CONFIG "local.cfg"
 #define TASK_LOCAL_CONFIG 4400
 
 const Float:LOCAL_CONFIG_REAPPLY_DELAY_SECONDS = 1.0;
-
-#define BOTS_LOCAL_CONFIG "local_bots.cfg"
-
-// YaPB runs yapb.cfg again a moment after every map start and puts the
-// previous map's yb_quota back (yb_ignore_cvars_on_changelevel), so the bot
-// values from our configs are applied again a few times after that.
-const Float:BOT_SETTINGS_REAPPLY_INTERVAL_SECONDS = 2.0;
-const BOT_SETTINGS_REAPPLY_COUNT = 3;
-const BOT_SETTING_COUNT = 5;
-const BOT_VALUE_LENGTH = 16;
-
-new const BOT_SETTING_CVARS[BOT_SETTING_COUNT][] = {
-    "yb_quota",
-    "yb_difficulty",
-    "yb_chat",
-    "yb_chat_percent",
-    "yb_radio_mode"
-};
 
 const MODE_COUNT = 5;
 const Float:VOTE_DURATION_SECONDS = 15.0;
@@ -71,8 +52,6 @@ new Float:gNextVoteAllowedAt;
 new gVoteMenu;
 new gVoteCounts[MODE_COUNT];
 new bool:gHasVoted[MAX_PLAYERS + 1];
-new gBotSettingPointers[BOT_SETTING_COUNT];
-new gWantedBotValues[BOT_SETTING_COUNT][BOT_VALUE_LENGTH];
 
 public plugin_init()
 {
@@ -88,18 +67,12 @@ public plugin_init()
 public plugin_cfg()
 {
     // base.cfg resets everything the other modes might have changed, then
-    // the mode file only has to list what makes that mode special.
+    // the mode file only has to list what makes that mode special. The bot
+    // settings of the Server Control window live in a managed block at the
+    // end of base.cfg, so the mode and map configs below can still overrule
+    // them (no bots on surf, more on de_rats).
     server_cmd("exec modes/base.cfg");
     server_cmd("exec modes/%s.cfg", gActiveMode);
-
-    // What the host set in the Server Control window for the bots: first for
-    // every mode (difficulty, chat ...), then for this mode only (bot count).
-    // Both run before the map configs on purpose, so a map like surf or
-    // de_rats can still overrule them.
-    execIfExists(BOTS_LOCAL_CONFIG);
-    new modeLocalConfig[64];
-    formatex(modeLocalConfig, charsmax(modeLocalConfig), "local_%s.cfg", gActiveMode);
-    execIfExists(modeLocalConfig);
 
     // Some map types need settings of their own in every mode, surf for
     // example needs a high sv_airaccelerate: modes/maps/<prefix>.cfg. Single
@@ -133,49 +106,11 @@ public plugin_cfg()
     server_exec();
 
     log_amx("Active mode: %s", gActiveMode);
-
-    // Without YaPB the pointers stay 0 and nothing is re-applied.
-    new isYapbLoaded = false;
-    for (new i = 0; i < BOT_SETTING_COUNT; i++) {
-        gBotSettingPointers[i] = get_cvar_pointer(BOT_SETTING_CVARS[i]);
-        if (gBotSettingPointers[i]) {
-            get_pcvar_string(gBotSettingPointers[i], gWantedBotValues[i], BOT_VALUE_LENGTH - 1);
-            isYapbLoaded = true;
-        }
-    }
-    if (isYapbLoaded) {
-        set_task(BOT_SETTINGS_REAPPLY_INTERVAL_SECONDS, "reapplyBotSettings", TASK_BOT_QUOTA, _, _, "a", BOT_SETTINGS_REAPPLY_COUNT);
-    }
-}
-
-execIfExists(const configFile[])
-{
-    if (file_exists(configFile)) {
-        server_cmd("exec %s", configFile);
-    }
 }
 
 public reapplyLocalConfig()
 {
     server_cmd("exec %s", LOCAL_CONFIG);
-}
-
-public reapplyBotSettings()
-{
-    new currentValue[BOT_VALUE_LENGTH];
-    for (new i = 0; i < BOT_SETTING_COUNT; i++) {
-        if (!gBotSettingPointers[i]) {
-            continue;
-        }
-
-        get_pcvar_string(gBotSettingPointers[i], currentValue, charsmax(currentValue));
-        if (equal(currentValue, gWantedBotValues[i])) {
-            continue;
-        }
-
-        log_amx("%s was %s, setting it back to %s from the configs", BOT_SETTING_CVARS[i], currentValue, gWantedBotValues[i]);
-        set_pcvar_string(gBotSettingPointers[i], gWantedBotValues[i]);
-    }
 }
 
 /**

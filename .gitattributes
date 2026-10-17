@@ -1,10 +1,8 @@
 # Everything in this package is used on Windows: Notepad shows README.txt,
-# cmd runs the .bat files and PowerShell 5.1 runs the scripts. Text files are
+# and the server reads the configs. Text files are
 # therefore always checked out with CRLF, whatever the git settings are.
 * text=auto eol=crlf
 
-*.bat    text eol=crlf
-*.ps1    text eol=crlf
 *.txt    text eol=crlf
 *.md     text eol=crlf
 *.csv    text eol=crlf

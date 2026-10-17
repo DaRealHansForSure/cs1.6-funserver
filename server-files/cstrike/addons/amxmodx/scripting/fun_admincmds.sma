@@ -14,6 +14,7 @@
 #include <fakemeta>
 #include <fun>
 #include <hamsandwich>
+#include <fun_common>
 
 #pragma semicolon 1
 
@@ -23,6 +24,7 @@
 
 #define TASK_ROCKET_EXPLODE 8100
 #define TASK_REAPPLY_GLOW 8200
+#define TASK_ZBOT_HOOKS 8300
 
 const FUN_ADMIN_FLAG = ADMIN_SLAY;
 const Float:ROCKET_LAUNCH_SPEED = 1100.0;
@@ -68,6 +70,7 @@ new Float:gSpeedFactor[MAX_PLAYERS + 1];
 
 // A glow stays on a player across rounds and deaths until "off" or the next map.
 new gGlowColor[MAX_PLAYERS + 1] = {NO_GLOW, ...};
+new bool:gAreZbotHooksRegistered;
 
 public plugin_precache()
 {
@@ -94,12 +97,34 @@ public client_putinserver(playerId)
 {
     gSpeedFactor[playerId] = 1.0;
     gGlowColor[playerId] = NO_GLOW;
+
+    if (!gAreZbotHooksRegistered && is_zbot(playerId)) {
+        set_task(FUN_ZBOT_HOOK_DELAY, "registerZbotHooks", TASK_ZBOT_HOOKS + playerId);
+    }
+}
+
+/**
+ * zBot bots have their own vtable (see fun_common.inc), so the player hooks
+ * are registered once more on the first bot. All bots share that vtable,
+ * a second registration would run every handler twice.
+ */
+public registerZbotHooks(taskId)
+{
+    new botId = taskId - TASK_ZBOT_HOOKS;
+    if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
+        return;
+    }
+    gAreZbotHooksRegistered = true;
+
+    RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
+    RegisterHamFromEntity(Ham_CS_Player_ResetMaxSpeed, botId, "onResetMaxSpeed", 1);
 }
 
 public client_disconnected(playerId)
 {
     remove_task(TASK_ROCKET_EXPLODE + playerId);
     remove_task(TASK_REAPPLY_GLOW + playerId);
+    remove_task(TASK_ZBOT_HOOKS + playerId);
     gGlowColor[playerId] = NO_GLOW;
 }
 

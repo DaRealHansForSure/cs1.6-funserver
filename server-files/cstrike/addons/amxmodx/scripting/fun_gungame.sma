@@ -24,6 +24,7 @@
 #define TASK_EQUIP_PLAYER 5100
 #define TASK_GRENADE_REFILL 5200
 #define TASK_END_MAP 5300
+#define TASK_ZBOT_HOOKS 5400
 
 const Float:EQUIP_DELAY_SECONDS = 0.2;
 const Float:GRENADE_REFILL_INTERVAL_SECONDS = 1.5;
@@ -87,6 +88,8 @@ new const LEVEL_TITLES[][] = {
 new gPlayerLevel[MAX_PLAYERS + 1];
 new gKillsOnLevel[MAX_PLAYERS + 1];
 new bool:gIsGameWon;
+new bool:gIsGunGameMode;
+new bool:gAreZbotHooksRegistered;
 new gKillsPerLevelCvar;
 new gHudSync;
 
@@ -97,6 +100,7 @@ public plugin_init()
     if (!is_fun_mode(FUN_MODE_GUNGAME)) {
         return;
     }
+    gIsGunGameMode = true;
 
     gKillsPerLevelCvar = create_cvar("fun_gg_kills_per_level", "1", _, "Kills needed per level", true, 1.0, true, 10.0);
 
@@ -114,11 +118,32 @@ public client_putinserver(playerId)
 {
     gPlayerLevel[playerId] = 0;
     gKillsOnLevel[playerId] = 0;
+
+    if (gIsGunGameMode && !gAreZbotHooksRegistered && is_zbot(playerId)) {
+        set_task(FUN_ZBOT_HOOK_DELAY, "registerZbotHooks", TASK_ZBOT_HOOKS + playerId);
+    }
 }
 
 public client_disconnected(playerId)
 {
     remove_task(TASK_EQUIP_PLAYER + playerId);
+    remove_task(TASK_ZBOT_HOOKS + playerId);
+}
+
+/**
+ * zBot bots have their own vtable (see fun_common.inc), so the spawn hook
+ * is registered once more on the first bot. All bots share that vtable,
+ * a second registration would equip every bot twice.
+ */
+public registerZbotHooks(taskId)
+{
+    new botId = taskId - TASK_ZBOT_HOOKS;
+    if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
+        return;
+    }
+    gAreZbotHooksRegistered = true;
+
+    RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
 }
 
 public blockCommand(playerId)

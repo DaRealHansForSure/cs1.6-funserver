@@ -25,6 +25,7 @@
 
 #define TASK_LEARN 9700
 #define TASK_SAVE 9800
+#define TASK_ZBOT_HOOKS 9900
 
 const MAX_SPAWN_POINTS = 512;
 const MIN_LEARNED_POINTS = 24;
@@ -47,6 +48,7 @@ new gPointCount;
 new gLearnedCount;
 new bool:gIsActive;
 new bool:gHasUnsavedPoints;
+new bool:gAreZbotHooksRegistered;
 new gPointsFile[128];
 
 public plugin_init()
@@ -59,6 +61,35 @@ public plugin_init()
     }
 
     RegisterHam(Ham_Spawn, "player", "onPlayerSpawned", 1);
+}
+
+public client_putinserver(playerId)
+{
+    if (!gIsActive || gAreZbotHooksRegistered || !is_zbot(playerId)) {
+        return;
+    }
+    set_task(FUN_ZBOT_HOOK_DELAY, "registerZbotHooks", TASK_ZBOT_HOOKS + playerId);
+}
+
+public client_disconnected(playerId)
+{
+    remove_task(TASK_ZBOT_HOOKS + playerId);
+}
+
+/**
+ * zBot bots have their own vtable (see fun_common.inc), so the spawn hook
+ * is registered once more on the first bot. All bots share that vtable,
+ * a second registration would move every bot twice.
+ */
+public registerZbotHooks(taskId)
+{
+    new botId = taskId - TASK_ZBOT_HOOKS;
+    if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
+        return;
+    }
+    gAreZbotHooksRegistered = true;
+
+    RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
 }
 
 public plugin_cfg()

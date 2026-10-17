@@ -40,3 +40,23 @@ stock bool:is_fun_mode(const wantedMode[])
 
     return bool:equal(activeMode, wantedMode);
 }
+
+// zBot bots are CCSBot entities with their own vtable, so a
+// RegisterHam(Ham_X, "player", ...) hook (CBasePlayer vtable) never fires
+// for them. Every plugin with player Ham hooks registers them a second time
+// with RegisterHamFromEntity on the first zBot bot, once per map. The delay
+// gives the bot's private data time to be set up before it is read.
+#define FUN_ZBOT_HOOK_DELAY 0.1
+
+/**
+ * Returns true for a ReGameDLL zBot bot. Only ReGameDLL registers the
+ * bot_quota cvar, so other fake clients (which share the CBasePlayer vtable
+ * and would get every hook twice) are not mistaken for zBot bots.
+ */
+stock bool:is_zbot(playerId)
+{
+    if (!is_user_bot(playerId)) {
+        return false;
+    }
+    return bool:cvar_exists("bot_quota");
+}

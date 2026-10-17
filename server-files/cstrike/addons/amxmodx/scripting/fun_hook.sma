@@ -11,6 +11,9 @@
 //   fun_hook_enabled     1 = on, 0 = off
 //   fun_hook_speed       pull speed in units per second
 //   fun_hook_admin_only  1 = only admins (flag "c") may hook
+//
+// Native for other plugins (library "fun_hook"):
+//   bool:fun_hook_get_point(playerId, Float:point[3])
 
 #include <amxmodx>
 #include <amxmisc>
@@ -57,6 +60,14 @@ new gBeamSprite;
 new gEnabledCvar;
 new gSpeedCvar;
 new gAdminOnlyCvar;
+
+public plugin_natives()
+{
+    // fun_livemap draws the hook rope on the live map, but must also run
+    // without this plugin, so it finds the native through this library name.
+    register_library("fun_hook");
+    register_native("fun_hook_get_point", "nativeGetHookPoint");
+}
 
 public plugin_precache()
 {
@@ -115,6 +126,22 @@ public cmdHookStart(playerId)
     set_task(HOOK_TICK_SECONDS, "pullTowardsHookPoint", TASK_HOOK_PULL + playerId, _, _, "b");
 
     return PLUGIN_HANDLED;
+}
+
+// native bool:fun_hook_get_point(playerId, Float:point[3])
+public bool:nativeGetHookPoint(pluginId, paramCount)
+{
+    new playerId = get_param(1);
+    if (playerId < 1 || playerId > MaxClients) {
+        return false;
+    }
+
+    if (!gIsHooking[playerId]) {
+        return false;
+    }
+
+    set_array_f(2, gHookPoint[playerId], sizeof(gHookPoint[]));
+    return true;
 }
 
 public cmdHookStop(playerId)

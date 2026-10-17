@@ -20,11 +20,13 @@
 #define PLUGIN_AUTHOR "LAN"
 
 #define TASK_EQUIP_PLAYER 9600
+#define TASK_ZBOT_HOOKS 9650
 
 const Float:EQUIP_DELAY_SECONDS = 0.2;
 const NO_PLAYER = 0;
 
 new bool:gIsDeathrunMode;
+new bool:gAreZbotHooksRegistered;
 new gTrapperId = NO_PLAYER;
 new gLastTrapperId = NO_PLAYER;
 new gHudSync;
@@ -44,9 +46,34 @@ public plugin_init()
     gHudSync = CreateHudSyncObj();
 }
 
+public client_putinserver(playerId)
+{
+    if (!gIsDeathrunMode || gAreZbotHooksRegistered || !is_zbot(playerId)) {
+        return;
+    }
+    set_task(FUN_ZBOT_HOOK_DELAY, "registerZbotHooks", TASK_ZBOT_HOOKS + playerId);
+}
+
+/**
+ * zBot bots have their own vtable (see fun_common.inc), so the spawn hook
+ * is registered once more on the first bot. All bots share that vtable,
+ * a second registration would run the handler twice per spawn.
+ */
+public registerZbotHooks(taskId)
+{
+    new botId = taskId - TASK_ZBOT_HOOKS;
+    if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
+        return;
+    }
+    gAreZbotHooksRegistered = true;
+
+    RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
+}
+
 public client_disconnected(playerId)
 {
     remove_task(TASK_EQUIP_PLAYER + playerId);
+    remove_task(TASK_ZBOT_HOOKS + playerId);
 
     if (playerId == gTrapperId) {
         gTrapperId = NO_PLAYER;

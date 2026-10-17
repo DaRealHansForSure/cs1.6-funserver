@@ -33,6 +33,7 @@
 
 #define TASK_EQUIP_PLAYER 9100
 #define TASK_HE_REFILL 9200
+#define TASK_ZBOT_HOOKS 9300
 
 const FUN_ROUND_ADMIN_FLAG = ADMIN_SLAY;
 const NO_EVENT = -1;
@@ -108,6 +109,7 @@ new const SPECIAL_MAP_PATTERN[][] = {
 };
 
 new bool:gIsEnabledHere;
+new bool:gAreZbotHooksRegistered;
 new gActiveEvent = NO_EVENT;
 new gLastEvent = NO_EVENT;
 new gForcedEvent = NO_EVENT;
@@ -147,9 +149,37 @@ public plugin_cfg()
     gIsEnabledHere = is_fun_mode(FUN_MODE_CLASSIC) && !isSpecialMap();
 }
 
+public client_putinserver(playerId)
+{
+    if (!gIsEnabledHere || gAreZbotHooksRegistered || !is_zbot(playerId)) {
+        return;
+    }
+    set_task(FUN_ZBOT_HOOK_DELAY, "registerZbotHooks", TASK_ZBOT_HOOKS + playerId);
+}
+
 public client_disconnected(playerId)
 {
     remove_task(TASK_EQUIP_PLAYER + playerId);
+    remove_task(TASK_ZBOT_HOOKS + playerId);
+}
+
+/**
+ * zBot bots have their own vtable (see fun_common.inc), so the player hooks
+ * are registered once more on the first bot. All bots share that vtable,
+ * a second registration would run every handler twice.
+ */
+public registerZbotHooks(taskId)
+{
+    new botId = taskId - TASK_ZBOT_HOOKS;
+    if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
+        return;
+    }
+    gAreZbotHooksRegistered = true;
+
+    RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
+    RegisterHamFromEntity(Ham_TakeDamage, botId, "onPlayerTakeDamage");
+    RegisterHamFromEntity(Ham_TraceAttack, botId, "onPlayerTraceAttack");
+    RegisterHamFromEntity(Ham_CS_Player_ResetMaxSpeed, botId, "onResetMaxSpeed", 1);
 }
 
 public cmdForceEvent(adminId, level, commandId)
