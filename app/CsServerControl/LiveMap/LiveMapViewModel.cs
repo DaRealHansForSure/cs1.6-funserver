@@ -362,6 +362,15 @@ public sealed partial class LiveMapViewModel : ObservableObject, IScreen {
         return RunOnSelected($"amx_glow #{{0}} {GlowColor}");
     }
 
+    /// <summary>The context menu picks the color and glows in one step.</summary>
+    [RelayCommand]
+    private Task GlowWith(string color) {
+        if (color != "off") {
+            GlowColor = color;
+        }
+        return RunOnSelected($"amx_glow #{{0}} {color}");
+    }
+
     [RelayCommand]
     private Task Rocket() {
         return RunOnSelected("amx_rocket #{0}");

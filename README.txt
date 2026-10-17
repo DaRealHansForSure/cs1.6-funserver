@@ -71,7 +71,8 @@ time left, LAN address and uptime.
 
 The player card on the Live Map also has the fun commands for the selected
 player: glow (pick a color), rocket, godmode, noclip, and Reset to switch
-glow, godmode and noclip off again. They run at once, like Slay.
+glow, godmode and noclip off again. They run at once, like Slay. The same
+commands are in the right-click menu of every row in the Players list.
 
 TV for a big screen: tick "Broadcast to a TV" on the Server screen and
 Apply. That starts an HLTV proxy. On the PC at the TV or projector start

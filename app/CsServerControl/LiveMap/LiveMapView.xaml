@@ -162,9 +162,35 @@
                             <ItemsControl ItemsSource="{Binding Players}" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
+                                        <!-- Tag carries the screen's view model into the context menu, which lives
+                                             outside the visual tree. Opening the menu also selects the player. -->
                                         <Button x:Name="Row" Style="{StaticResource PlayerRowButton}" Margin="0,0,0,2"
                                                 Command="{Binding DataContext.SelectPlayerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}">
+                                                CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}"
+                                                Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                ContextMenuOpening="OnPlayerRowContextMenuOpening">
+                                            <Button.ContextMenu>
+                                                <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
+                                                    <MenuItem Header="Glow">
+                                                        <MenuItem Header="Red" Command="{Binding GlowWithCommand}" CommandParameter="red" />
+                                                        <MenuItem Header="Green" Command="{Binding GlowWithCommand}" CommandParameter="green" />
+                                                        <MenuItem Header="Blue" Command="{Binding GlowWithCommand}" CommandParameter="blue" />
+                                                        <MenuItem Header="Yellow" Command="{Binding GlowWithCommand}" CommandParameter="yellow" />
+                                                        <MenuItem Header="Pink" Command="{Binding GlowWithCommand}" CommandParameter="pink" />
+                                                        <MenuItem Header="White" Command="{Binding GlowWithCommand}" CommandParameter="white" />
+                                                        <Separator />
+                                                        <MenuItem Header="Off" Command="{Binding GlowWithCommand}" CommandParameter="off" />
+                                                    </MenuItem>
+                                                    <MenuItem Header="Rocket" Command="{Binding RocketCommand}" />
+                                                    <MenuItem Header="Godmode" Command="{Binding GodmodeCommand}" />
+                                                    <MenuItem Header="Noclip" Command="{Binding NoclipCommand}" />
+                                                    <MenuItem Header="Reset fun" Command="{Binding ResetFunCommand}" />
+                                                    <Separator />
+                                                    <MenuItem Header="Follow camera" IsCheckable="True" IsChecked="{Binding IsFollowing, Mode=TwoWay}" />
+                                                    <MenuItem Header="Slay" Command="{Binding SlayCommand}" />
+                                                    <MenuItem Header="Kick..." Command="{Binding KickCommand}" />
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
                                             <Grid x:Name="RowContent">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="10" />

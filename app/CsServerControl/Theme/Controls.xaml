@@ -544,6 +544,82 @@
         </Style.Triggers>
     </Style>
 
+    <!-- Context menus: square, dark, the same card look as everything else. -->
+    <Style TargetType="ContextMenu">
+        <Setter Property="Background" Value="{StaticResource CardBackground}" />
+        <Setter Property="BorderBrush" Value="{StaticResource ControlBorder}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeToolbar}" />
+        <Setter Property="HasDropShadow" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{StaticResource BorderOne}" Padding="4">
+                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="Separator">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Border Height="1" Margin="8,4,8,4" Background="{StaticResource CardBorder}" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Border x:Name="Row" Background="{StaticResource Transparent}" Padding="8,7,12,7" MinWidth="190">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="22" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Path x:Name="Check" Data="M 1 5 L 4 8 L 10 1" Stroke="{StaticResource Accent}" StrokeThickness="2"
+                                  VerticalAlignment="Center" Visibility="Collapsed" />
+                            <ContentPresenter Grid.Column="1" ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center" />
+                            <Path x:Name="Arrow" Grid.Column="2" Data="M 0 0 L 4 4 L 0 8" Stroke="{StaticResource TextSecondary}"
+                                  StrokeThickness="1.5" VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed" />
+                            <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="4" VerticalOffset="-5"
+                                   IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                                   AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                                <Border Background="{StaticResource CardBackground}" BorderBrush="{StaticResource ControlBorder}"
+                                        BorderThickness="{StaticResource BorderOne}" Padding="4">
+                                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Row" Property="Background" Value="{StaticResource SelectedRow}" />
+                        </Trigger>
+                        <Trigger Property="Role" Value="SubmenuHeader">
+                            <Setter TargetName="Arrow" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Check" Property="Visibility" Value="Visible" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Row" Property="Opacity" Value="0.45" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style TargetType="ToolTip">
         <Setter Property="Background" Value="{StaticResource CardBackground}" />
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />

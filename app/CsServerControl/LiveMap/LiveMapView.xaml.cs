@@ -69,6 +69,16 @@ public partial class LiveMapView : UserControl {
         Viewport.LostKeyboardFocus += (_, _) => _heldKeys.Clear();
     }
 
+    /// <summary>
+    /// The row menu acts on the selected player, so opening it (right click
+    /// or the menu key) selects that row first; the card shows who it is.
+    /// </summary>
+    private void OnPlayerRowContextMenuOpening(object sender, ContextMenuEventArgs e) {
+        if (_viewModel != null && sender is FrameworkElement { DataContext: PlayerRowViewModel row }) {
+            _viewModel.SelectPlayerCommand.Execute(row);
+        }
+    }
+
     /// <summary>Gives the keyboard to the 3D view, so the camera keys work at once.</summary>
     public void FocusViewport() {
         Viewport.Focus();
