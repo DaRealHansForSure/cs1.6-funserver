@@ -69,7 +69,8 @@ public sealed partial class OptionsViewModel : ObservableObject, IScreen {
     public OptionsViewModel(ServerConnection connection, IReadOnlyList<OptionChoice> screens) {
         _connection = connection;
         StartScreens = [new OptionChoice("", "The screen used last"), .. screens];
-        _selectedAddress = AddressChoices[0];
+        // A placeholder until Load fills the list from the network adapters.
+        _selectedAddress = new OptionChoice("", "Automatic");
         _selectedStartScreen = StartScreens[0];
         _connection.PropertyChanged += OnConnectionChanged;
         Load();

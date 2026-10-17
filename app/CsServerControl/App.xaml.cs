@@ -33,15 +33,25 @@ public partial class App : Application {
 
         DispatcherUnhandledException += OnUnhandledException;
 
-        PackagePaths paths = PackagePaths.Locate();
-        AppSettings settings = AppSettings.Load();
-        _connection = new ServerConnection(paths, settings, Dispatcher);
+        try {
+            PackagePaths paths = PackagePaths.Locate();
+            AppSettings settings = AppSettings.Load();
+            _connection = new ServerConnection(paths, settings, Dispatcher);
 
-        var shell = new ShellViewModel(_connection);
-        var window = new MainWindow(shell, settings);
-        MainWindow = window;
-        window.Show();
-        shell.RunStartupCommand(command);
+            var shell = new ShellViewModel(_connection);
+            var window = new MainWindow(shell, settings);
+            MainWindow = window;
+            window.Show();
+            shell.RunStartupCommand(command);
+        } catch (Exception exception) {
+            // Without a window there is nothing to keep running for. Staying
+            // alive would hold the exe and the one-window lock, so the next
+            // start would silently bring nothing forward.
+            string logFile = WriteErrorLog(exception);
+            MessageBox.Show($"The window could not start: {exception.GetBaseException().Message}\n\nDetails: {logFile}",
+                "CS 1.6 Server Control", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+        }
     }
 
     /// <summary>
