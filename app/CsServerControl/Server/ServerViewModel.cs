@@ -45,12 +45,13 @@ public sealed partial class MapRowViewModel : ObservableObject {
 
     public MapRowViewModel(string name, ImageSource? thumbnail, Action<MapRowViewModel> onPicked) {
         Name = name;
-        Thumbnail = thumbnail;
+        _thumbnail = thumbnail;
         _onPicked = onPicked;
     }
 
     public string Name { get; }
-    public ImageSource? Thumbnail { get; }
+    [ObservableProperty]
+    private ImageSource? _thumbnail;
 
     partial void OnIsPickedChanged(bool value) {
         if (value) {
@@ -111,6 +112,8 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
             }
         };
         Round = new RoundActionsViewModel(connection);
+        // A picture rendered on the Maps screen shows up here at once.
+        MapThumbnails.PictureChanged += OnPictureChanged;
 
         foreach (GameMode mode in GameModes.All) {
             ModeTiles.Add(new ModeTileViewModel(mode, OnModePicked));
@@ -350,6 +353,12 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
             UpdateMapMarkers();
         } finally {
             _isSyncing = wasSyncing;
+        }
+    }
+
+    private void OnPictureChanged(object? sender, string mapName) {
+        foreach (MapRowViewModel row in Maps.Where(row => string.Equals(row.Name, mapName, StringComparison.OrdinalIgnoreCase))) {
+            row.Thumbnail = _thumbnails.Get(mapName);
         }
     }
 

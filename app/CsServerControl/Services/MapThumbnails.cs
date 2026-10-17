@@ -31,12 +31,16 @@ public sealed class MapThumbnails {
         return Cache.GetOrAdd((_decodeWidth, mapName.ToLowerInvariant()), key => Load(key.MapName));
     }
 
+    /// <summary>Raised on the thread that called Forget with the map whose picture changed.</summary>
+    public static event EventHandler<string>? PictureChanged;
+
     /// <summary>After a new picture was saved: the next Get reads the files again.</summary>
     public static void Forget(string mapName) {
         string key = mapName.ToLowerInvariant();
         foreach ((int Width, string MapName) cached in Cache.Keys.Where(cached => cached.MapName == key)) {
             Cache.TryRemove(cached, out _);
         }
+        PictureChanged?.Invoke(null, key);
     }
 
     private ImageSource? Load(string mapName) {
