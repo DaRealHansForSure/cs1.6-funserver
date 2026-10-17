@@ -19,6 +19,7 @@
 #define TASK_VOTE_END 4100
 #define TASK_MAP_CHANGE 4200
 #define LOCAL_CONFIG "local.cfg"
+#define LOCAL_BOT_CONFIG "local_bots.cfg"
 #define TASK_LOCAL_CONFIG 4400
 
 const Float:LOCAL_CONFIG_REAPPLY_DELAY_SECONDS = 1.0;
@@ -68,10 +69,15 @@ public plugin_cfg()
 {
     // base.cfg resets everything the other modes might have changed, then
     // the mode file only has to list what makes that mode special. The bot
-    // settings of the Server Control window live in a managed block at the
-    // end of base.cfg, so the mode and map configs below can still overrule
-    // them (no bots on surf, more on de_rats).
+    // defaults sit in a block at the end of base.cfg, so the mode and map
+    // configs below can still overrule them (no bots on surf, more on de_rats).
     server_cmd("exec modes/base.cfg");
+    // The host's bot settings from the window (local_bots.cfg) go on top of
+    // the defaults in base.cfg, before the mode, so Deathrun can still turn
+    // bots off.
+    if (file_exists(LOCAL_BOT_CONFIG)) {
+        server_cmd("exec %s", LOCAL_BOT_CONFIG);
+    }
     server_cmd("exec modes/%s.cfg", gActiveMode);
 
     // Some map types need settings of their own in every mode, surf for

@@ -77,7 +77,9 @@ time left, LAN address and uptime.
   Bots       zBot settings: difficulty, fill count, teams, weapons, radio
              and chat. Everything is a draft until Apply, also kicking a
              bot, adding bots and building navigation files; Discard drops
-             it all. Settings are saved in modes\base.cfg.
+             it all. The package defaults stay in modes\base.cfg; your
+             changes go into server\cstrike\local_bots.cfg, and "Reset to
+             defaults" (then Apply) goes back to the package values.
   Maps       every installed map in one table: picture, the modes that
              play it, where it came from (stock, map pack, custom), its
              navigation file and size. Search and a Show filter (per mode,

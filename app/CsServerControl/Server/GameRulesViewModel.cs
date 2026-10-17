@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using CsServerControl.Install;
 using CsServerControl.Options;
 using CsServerControl.Services;
@@ -172,6 +173,18 @@ public sealed partial class GameRulesViewModel : ObservableObject {
 
         Load();
         return null;
+    }
+
+    /// <summary>Empties every field of the shown mode, so its own values apply again once Apply removes them.</summary>
+    [RelayCommand]
+    private void ResetToDefaults() {
+        foreach (GameRuleRowViewModel row in Rows) {
+            if (row.IsOnOff) {
+                row.SelectedChoice = row.Choices[0];
+            } else {
+                row.Text = "";
+            }
+        }
     }
 
     partial void OnSelectedModeChanged(ModeChoice value) {

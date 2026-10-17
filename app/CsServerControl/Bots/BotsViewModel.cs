@@ -191,6 +191,11 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
     [NotifyPropertyChangedFor(nameof(IsDirty))]
     private bool _areSettingsChanged;
 
+    /// <summary>True while local_bots.cfg holds values of the host; false means the package defaults.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SettingsSourceText))]
+    private bool _hasCustomSettings;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDirty), nameof(PendingAddsText), nameof(HasPendingAdds))]
     private int _pendingTerroristAdds;
@@ -261,6 +266,8 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
 
     public ObservableCollection<NavRowViewModel> NavRows { get; } = [];
     public ObservableCollection<ActiveBotViewModel> ActiveBots { get; } = [];
+
+    public string SettingsSourceText => HasCustomSettings ? "Your settings (local_bots.cfg)" : "Package defaults";
 
     public bool IsDirty => AreSettingsChanged || PendingActionCount > 0 || IsReconnectPending
         || PendingTerroristAdds > 0 || PendingCounterTerroristAdds > 0;
@@ -511,13 +518,11 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
     private async Task<bool> ApplySettingsAsync() {
         IReadOnlyList<KeyValuePair<string, string>> cvars = BuildCvars();
         try {
-            BotConfigWriter.WriteBlock(_connection.Paths.ServerBaseConfigFile, cvars);
-            if (File.Exists(_connection.Paths.SourceBaseConfigFile)) {
-                // Also in the package source, or the next install would put the old values back.
-                BotConfigWriter.WriteBlock(_connection.Paths.SourceBaseConfigFile, cvars);
-            }
+            // Only into the host's own file; base.cfg keeps the package defaults.
+            BotSettingsStore.SaveCustom(_connection.Paths, cvars, BotSettingsStore.ReadDefaults(_connection.Paths));
+            HasCustomSettings = File.Exists(_connection.Paths.LocalBotConfigFile);
         } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) {
-            ApplyError = "Could not write base.cfg: " + exception.Message;
+            ApplyError = "Could not write local_bots.cfg: " + exception.Message;
             return false;
         }
 
@@ -622,12 +627,30 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
         return value ? "1" : "0";
     }
 
+    /// <summary>The package defaults with the host's own values from local_bots.cfg on top.</summary>
     private void LoadSettingsFromConfig() {
-        IReadOnlyDictionary<string, string> values = BotConfigWriter.ReadBlock(_connection.Paths.ServerBaseConfigFile);
-        if (values.Count == 0) {
-            values = BotConfigWriter.ReadBlock(_connection.Paths.SourceBaseConfigFile);
+        IReadOnlyDictionary<string, string> defaults = BotSettingsStore.ReadDefaults(_connection.Paths);
+        IReadOnlyDictionary<string, string> custom = BotSettingsStore.ReadCustom(_connection.Paths, defaults.Keys);
+        var values = new Dictionary<string, string>(defaults, StringComparer.OrdinalIgnoreCase);
+        foreach ((string cvar, string value) in custom) {
+            values[cvar] = value;
         }
+        ShowValues(values);
+        HasCustomSettings = custom.Count > 0;
+        AreSettingsChanged = false;
+    }
 
+    /// <summary>
+    /// Back to the package defaults, as a draft like every change: Apply then
+    /// removes local_bots.cfg, Discard keeps the host's values.
+    /// </summary>
+    [RelayCommand]
+    private void ResetToDefaults() {
+        ShowValues(BotSettingsStore.ReadDefaults(_connection.Paths));
+        AreSettingsChanged = HasCustomSettings;
+    }
+
+    private void ShowValues(IReadOnlyDictionary<string, string> values) {
         _isLoading = true;
         try {
             if (values.TryGetValue("bot_difficulty", out string? difficulty) && int.TryParse(difficulty, out int level)) {
@@ -654,7 +677,6 @@ public sealed partial class BotsViewModel : ObservableObject, IScreen {
         } finally {
             _isLoading = false;
         }
-        AreSettingsChanged = false;
     }
 
     private static SelectOption PickOption(IReadOnlyList<SelectOption> options, IReadOnlyDictionary<string, string> values, string cvar, SelectOption fallback) {
