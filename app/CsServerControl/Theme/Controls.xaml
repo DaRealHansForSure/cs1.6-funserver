@@ -507,6 +507,7 @@
     <Style TargetType="ScrollBar">
         <Setter Property="Width" Value="8" />
         <Setter Property="MinWidth" Value="8" />
+        <Setter Property="Margin" Value="{StaticResource VerticalScrollBarGap}" />
         <Setter Property="Background" Value="{StaticResource Transparent}" />
         <Setter Property="Template">
             <Setter.Value>
@@ -529,6 +530,7 @@
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Height" Value="8" />
                 <Setter Property="MinHeight" Value="8" />
+                <Setter Property="Margin" Value="{StaticResource HorizontalScrollBarGap}" />
                 <Setter Property="Width" Value="Auto" />
                 <Setter Property="Template">
                     <Setter.Value>

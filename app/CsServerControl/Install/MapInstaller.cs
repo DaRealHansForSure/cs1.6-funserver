@@ -89,7 +89,7 @@ internal sealed class MapInstaller {
         }
 
         List<string> failedMaps = [];
-        foreach (MapListEntry map in MapList.Load(_paths.MapListFile)) {
+        foreach (MapListEntry map in AllListedMaps()) {
             try {
                 string archive = await _downloads.GetAsync(map.Url, Path.Combine("maps", map.ArchiveName), cancellation);
                 IReadOnlyList<string> installedMaps = await Task.Run(() => _copier.Install(_extractor.Expand(archive)), cancellation);
@@ -123,7 +123,7 @@ internal sealed class MapInstaller {
 
         int downloadedCount = 0;
         int existingCount = 0;
-        foreach (MapListEntry map in MapList.Load(_paths.MapListFile)) {
+        foreach (MapListEntry map in AllListedMaps()) {
             if (map.ModId.Length == 0) {
                 continue;
             }
@@ -231,6 +231,109 @@ internal sealed class MapInstaller {
             } catch (Exception exception) when (IsRecoverable(exception)) {
                 _log.Problem($"{Path.GetFileName(archive)} failed: {exception.Message}");
             }
+        }
+    }
+
+    /// <summary>The map pack of the package and the maps installed from the market.</summary>
+    private IEnumerable<MapListEntry> AllListedMaps() {
+        return MapList.Load(_paths.MapListFile).Concat(MapList.LoadIfExists(_paths.MarketListFile));
+    }
+
+    /// <summary>
+    /// One map from the market: the archive GameBanana marked clean goes
+    /// through the same steps as the map pack (cache, unpack, copy, missing
+    /// sprites and models), then its picture and the map lists. Returns the
+    /// installed map names. The entry in market.csv makes Update maps restore
+    /// it like a map of the pack.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> InstallMarketMapAsync(MarketMap map, CancellationToken cancellation) {
+        _log.Step($"Installing {map.Name} from GameBanana");
+
+        IReadOnlyList<MarketFile> files = await GameBananaMarket.LoadFilesAsync(map.ModId, cancellation);
+        MarketFile? archiveFile = GameBananaMarket.PickArchive(files);
+        if (archiveFile == null) {
+            throw new InstallException($"{map.Name} has no .zip, .rar or .7z file that passed GameBanana's virus scan.");
+        }
+        _log.Note($"{archiveFile.FileName} ({archiveFile.Size / 1024 / 1024.0:0.0} MB)");
+
+        string archive = await _downloads.GetAsync(archiveFile.DownloadUrl, Path.Combine("maps", archiveFile.FileName), cancellation);
+        IReadOnlyList<string> installedMaps = await Task.Run(() => _copier.Install(_extractor.Expand(archive)), cancellation);
+        _log.Note($"Installed: {string.Join(", ", installedMaps)}");
+
+        var entry = new MapListEntry(installedMaps[0], archiveFile.DownloadUrl, archiveFile.FileName,
+            map.ModId.ToString(System.Globalization.CultureInfo.InvariantCulture), string.Join(';', installedMaps));
+        List<MapListEntry> market = [.. MapList.LoadIfExists(_paths.MarketListFile).Where(existing => existing.ModId != entry.ModId), entry];
+        MapList.Save(_paths.MarketListFile, market);
+
+        await DownloadMarketPictureAsync(entry, cancellation);
+        UpdateMapCycles();
+        return installedMaps;
+    }
+
+    /// <summary>
+    /// Deletes the maps a market install brought (.bsp, .nav, .txt, .res and
+    /// their pictures) and its market.csv entry. Maps that are also stock or
+    /// part of the map pack stay, shared sounds and models stay too.
+    /// </summary>
+    public IReadOnlyList<string> RemoveMarketMap(int modId) {
+        string id = modId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        List<MapListEntry> market = [.. MapList.LoadIfExists(_paths.MarketListFile)];
+        MapListEntry? entry = market.FirstOrDefault(existing => existing.ModId == id);
+        if (entry == null) {
+            throw new InstallException("This map was not installed from the market.");
+        }
+        _log.Step($"Removing {entry.Name}");
+
+        var packMaps = MapList.Load(_paths.MapListFile).SelectMany(pack => pack.MapNames).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        List<string> removed = [];
+        foreach (string mapName in entry.MapNames) {
+            bool isShared = InstallComponents.StockMaps.Contains(mapName) || packMaps.Contains(mapName);
+            if (isShared) {
+                _log.Note($"{mapName} is part of the package, kept");
+                continue;
+            }
+            foreach (string extension in new[] { ".bsp", ".nav", ".txt", ".res" }) {
+                DeleteAndReport(Path.Combine(_paths.MapsDir, mapName + extension));
+            }
+            foreach (string picture in Directory.Exists(_paths.PreviewsDir) ? Directory.EnumerateFiles(_paths.PreviewsDir, mapName + ".*") : []) {
+                DeleteAndReport(picture);
+            }
+            DeleteAndReport(Path.Combine(_paths.Package.GeneratedPreviewsDir, mapName + ".png"));
+            removed.Add(mapName);
+        }
+
+        market.Remove(entry);
+        MapList.Save(_paths.MarketListFile, market);
+        _log.Note(removed.Count == 0 ? "No map files removed" : $"Removed: {string.Join(", ", removed)}");
+        UpdateMapCycles();
+        return removed;
+    }
+
+    private void DeleteAndReport(string file) {
+        try {
+            File.Delete(file);
+        } catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) {
+            _log.Problem($"Could not delete {Path.GetFileName(file)}: {exception.Message}");
+        }
+    }
+
+    private async Task DownloadMarketPictureAsync(MapListEntry entry, CancellationToken cancellation) {
+        if (!Directory.Exists(_paths.PreviewsDir)) {
+            Directory.CreateDirectory(_paths.PreviewsDir);
+        }
+        if (HasPreview(entry.Name)) {
+            return;
+        }
+        try {
+            string? imageUrl = await FindPreviewUrlAsync(entry.ModId, cancellation);
+            if (imageUrl == null) {
+                _log.Note("No jpg or png picture on GameBanana; Generate missing pictures can draw one.");
+                return;
+            }
+            string extension = Path.GetExtension(new Uri(imageUrl).AbsolutePath).ToLowerInvariant();
+            await DownloadCache.DownloadFileAsync(imageUrl, Path.Combine(_paths.PreviewsDir, entry.Name + extension), cancellation);
+        } catch (Exception exception) when (IsRecoverable(exception)) {
+            _log.Problem($"Picture failed: {exception.Message}");
         }
     }
 

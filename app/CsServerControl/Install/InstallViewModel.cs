@@ -67,22 +67,39 @@ public sealed partial class InstallViewModel : ObservableObject, IScreen, IInsta
 
     /// <summary>Everything: SteamCMD, HLDS, mods, plugins, maps. Safe to run again as a repair.</summary>
     [RelayCommand]
-    public Task InstallServer() {
+    public Task<bool> InstallServer() {
         if (_connection.IsRunning) {
             ShowResult("Stop the server first: the install replaces files the running server has open.", failed: true);
-            return Task.CompletedTask;
+            return Task.FromResult(false);
         }
         return RunAsync("Install", (installer, token) => installer.InstallServerAsync(token));
     }
 
+    /// <summary>The map pack, the market maps, custom-maps and the map lists; shown on the Maps screen.</summary>
     [RelayCommand]
-    public Task UpdateMaps() {
+    public Task<bool> UpdateMaps() {
         return RunAsync("Map update", (installer, token) => installer.InstallMapsAsync(token));
+    }
+
+    /// <summary>Installs one map from the market; the names of the installed maps, empty when it failed.</summary>
+    public async Task<IReadOnlyList<string>> InstallMarketMap(MarketMap map) {
+        IReadOnlyList<string> installed = [];
+        await RunAsync($"Install of {map.Name}", async (installer, token) => installed = await installer.InstallMarketMapAsync(map, token));
+        return installed;
+    }
+
+    public async Task<IReadOnlyList<string>> RemoveMarketMap(MarketMap map) {
+        IReadOnlyList<string> removed = [];
+        await RunAsync($"Removing {map.Name}", (installer, _) => {
+            removed = installer.RemoveMarketMap(map.ModId);
+            return Task.CompletedTask;
+        });
+        return removed;
     }
 
     /// <summary>Copies server-files into the server and compiles the fun plugins again.</summary>
     [RelayCommand]
-    public Task RebuildPlugins() {
+    public Task<bool> RebuildPlugins() {
         return RunAsync("Plugin rebuild", (installer, token) => installer.InstallFunFilesAsync(token));
     }
 
@@ -97,9 +114,10 @@ public sealed partial class InstallViewModel : ObservableObject, IScreen, IInsta
         return modal.Result;
     }
 
-    private async Task RunAsync(string title, Func<PackageInstaller, CancellationToken, Task> job) {
+    /// <summary>One job at a time for both screens: they share tools\work and the log. True when it finished without an error.</summary>
+    private async Task<bool> RunAsync(string title, Func<PackageInstaller, CancellationToken, Task> job) {
         if (IsBusy) {
-            return;
+            return false;
         }
 
         IsBusy = true;
@@ -113,11 +131,12 @@ public sealed partial class InstallViewModel : ObservableObject, IScreen, IInsta
             // Off the UI thread: downloads, archives and SteamCMD take minutes.
             await Task.Run(() => job(installer, _cancellation.Token));
             ShowResult($"{title} done.", failed: false);
+            return true;
         } catch (OperationCanceledException) {
             ShowResult($"{title} cancelled. Running it again continues where it stopped.", failed: true);
         } catch (InstallException exception) {
             ShowResult($"{title} failed: {exception.Message}", failed: true);
-        } catch (Exception exception) when (exception is System.IO.IOException or UnauthorizedAccessException or HttpRequestException) {
+        } catch (Exception exception) when (exception is System.IO.IOException or UnauthorizedAccessException or HttpRequestException or System.Text.Json.JsonException) {
             ShowResult($"{title} failed: {exception.Message}", failed: true);
         } finally {
             _cancellation.Dispose();
@@ -125,6 +144,7 @@ public sealed partial class InstallViewModel : ObservableObject, IScreen, IInsta
             IsBusy = false;
             OnPropertyChanged(nameof(IsServerInstalled));
         }
+        return false;
     }
 
     private void ShowResult(string text, bool failed) {

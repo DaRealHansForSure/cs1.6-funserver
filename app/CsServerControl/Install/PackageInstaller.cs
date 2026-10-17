@@ -77,6 +77,24 @@ public sealed class PackageInstaller {
         }
     }
 
+    /// <summary>One map from the market, with its picture and the map lists.</summary>
+    public async Task<IReadOnlyList<string>> InstallMarketMapAsync(MarketMap map, CancellationToken cancellation) {
+        if (!_paths.Package.IsServerInstalled) {
+            throw new InstallException(NotInstalledMessage);
+        }
+
+        Directory.CreateDirectory(_paths.WorkDir);
+        try {
+            return await _maps.InstallMarketMapAsync(map, cancellation);
+        } finally {
+            FileTree.DeleteFolderQuietly(_paths.WorkDir);
+        }
+    }
+
+    public IReadOnlyList<string> RemoveMarketMap(int modId) {
+        return _maps.RemoveMarketMap(modId);
+    }
+
     /// <summary>
     /// Copies the server-files overlay, compiles the fun plugins, registers them
     /// and sets up the admin account, for a quick refresh after editing a

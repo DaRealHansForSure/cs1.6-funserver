@@ -1,7 +1,8 @@
 <UserControl x:Class="CsServerControl.Maps.MapsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:services="clr-namespace:CsServerControl.Services">
+             xmlns:services="clr-namespace:CsServerControl.Services"
+             xmlns:install="clr-namespace:CsServerControl.Install">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="VisibleWhenTrue" />
         <services:ZeroToVisibleConverter x:Key="VisibleWhenZero" />
@@ -20,6 +21,10 @@
             <Setter Property="Margin" Value="6,0,0,0" />
             <Setter Property="MinWidth" Value="56" />
         </Style>
+        <Style x:Key="SmallPrimaryButton" TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+            <Setter Property="Height" Value="{StaticResource SmallButtonHeight}" />
+            <Setter Property="FontSize" Value="{StaticResource FontSizeSmall}" />
+        </Style>
     </UserControl.Resources>
 
     <Grid Margin="{StaticResource PagePadding}">
@@ -35,6 +40,15 @@
             </StackPanel>
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Maps" Style="{StaticResource PageTitleText}" />
+                <Border Background="{StaticResource InputBackground}" Padding="4" Margin="16,0,0,0" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <RadioButton Content="Installed" Style="{StaticResource SegmentButton}" GroupName="MapsTab" Height="{StaticResource SmallButtonHeight}"
+                                     Width="120" Margin="0,0,4,0" IsChecked="{Binding IsInstalledTab, Mode=TwoWay}" />
+                        <RadioButton Content="Market" Style="{StaticResource SegmentButton}" GroupName="MapsTab" Height="{StaticResource SmallButtonHeight}"
+                                     Width="120" IsChecked="{Binding IsMarketTab, Mode=TwoWay}"
+                                     ToolTip="Counter-Strike 1.6 maps from GameBanana, installed with one click" />
+                    </StackPanel>
+                </Border>
                 <TextBlock Text="{Binding Summary}" FontSize="{StaticResource FontSizeToolbar}" Foreground="{StaticResource TextTertiary}"
                            VerticalAlignment="Center" Margin="16,0,0,0" />
             </StackPanel>
@@ -48,7 +62,7 @@
             </Grid.ColumnDefinitions>
 
             <!-- Installed maps -->
-            <Border Grid.Column="0" Style="{StaticResource Card}">
+            <Border Grid.Column="0" Style="{StaticResource Card}" Visibility="{Binding IsInstalledTab, Converter={StaticResource VisibleWhenTrue}}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -161,9 +175,148 @@
                 </Grid>
             </Border>
 
-            <!-- Right column: what is missing, and where new maps come from -->
+            <!-- Market: GameBanana's CS 1.6 maps -->
+            <Border Grid.Column="0" Style="{StaticResource Card}" DataContext="{Binding Market}"
+                    Visibility="{Binding DataContext.IsMarketTab, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource VisibleWhenTrue}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <DockPanel Grid.Row="0" Margin="0,0,0,8">
+                        <ComboBox DockPanel.Dock="Right" Style="{StaticResource Select}" Width="170" ItemsSource="{Binding Sorts}"
+                                  SelectedItem="{Binding SelectedSort}" DisplayMemberPath="Label" AutomationProperties.Name="Sort" />
+                        <ComboBox DockPanel.Dock="Right" Style="{StaticResource Select}" Width="230" Margin="0,0,8,0" ItemsSource="{Binding Categories}"
+                                  SelectedItem="{Binding SelectedCategory}" DisplayMemberPath="Label" AutomationProperties.Name="Category" />
+                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextInput}" Width="220" Margin="0,0,8,0" Tag="Name contains"
+                                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Search the market" />
+                        <TextBlock Text="Market" Style="{StaticResource CardTitleText}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <TextBlock Grid.Row="1" Text="{Binding StatusText}" Style="{StaticResource HintText}" Margin="0,0,0,10" />
+
+                    <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <StackPanel>
+                            <ItemsControl ItemsSource="{Binding Rows}" Focusable="False">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Width="244" Margin="0,0,10,10" Padding="10" Background="{StaticResource InputBackground}"
+                                                BorderBrush="{StaticResource CardBorder}" BorderThickness="{StaticResource BorderOne}">
+                                            <StackPanel>
+                                                <Border Height="124" Background="{StaticResource ViewportBackground}">
+                                                    <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Name}" FontFamily="{StaticResource MonoFont}" FontSize="{StaticResource FontSizeToolbar}"
+                                                           Foreground="{StaticResource TextPrimary}" TextTrimming="CharacterEllipsis" Margin="0,8,0,2"
+                                                           ToolTip="{Binding Name}" />
+                                                <TextBlock Text="{Binding CategoryText}" Style="{StaticResource HintText}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding StatsText}" Style="{StaticResource HintText}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding StateText}" FontSize="{StaticResource FontSizeSmall}" Foreground="{StaticResource Accent}"
+                                                           Margin="0,4,0,0" TextTrimming="CharacterEllipsis" />
+                                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                    <Button Content="Install" Style="{StaticResource SmallPrimaryButton}" MinWidth="72" Margin="0,0,6,0"
+                                                            Command="{Binding DataContext.InstallMapCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name, StringFormat=Install {0}}"
+                                                            Visibility="{Binding CanInstall, Converter={StaticResource VisibleWhenTrue}}"
+                                                            IsEnabled="{Binding DataContext.CanChangeMaps, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                                    <Button Content="Remove" Style="{StaticResource SmallSecondaryButton}" MinWidth="72" Margin="0,0,6,0"
+                                                            Command="{Binding DataContext.RemoveMapCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name, StringFormat=Remove {0}}"
+                                                            Visibility="{Binding IsRemovable, Converter={StaticResource VisibleWhenTrue}}"
+                                                            IsEnabled="{Binding DataContext.CanChangeMaps, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                                                    <Button Content="Page" Style="{StaticResource SmallSecondaryButton}" MinWidth="56"
+                                                            Command="{Binding DataContext.OpenPageCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                            CommandParameter="{Binding}" ToolTip="Opens the map's GameBanana page in the browser"
+                                                            AutomationProperties.Name="{Binding Name, StringFormat=GameBanana page of {0}}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Content="Load more" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,4,0,0"
+                                    Command="{Binding LoadMoreCommand}" IsEnabled="{Binding CanLoadMore}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- Right column: map jobs, what is missing, and where new maps come from -->
             <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto" Focusable="False">
                 <StackPanel>
+                    <!-- Map update and market installs run here, in the installer the Install screen shares. -->
+                    <Border Style="{StaticResource Card}" Margin="0,0,0,16" DataContext="{Binding Install}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,8">
+                                <Button DockPanel.Dock="Right" Content="Cancel" Style="{StaticResource SmallSecondaryButton}" Command="{Binding CancelCommand}"
+                                        Visibility="{Binding IsBusy, Converter={StaticResource VisibleWhenTrue}}" />
+                                <TextBlock Text="Map updates" Style="{StaticResource CardTitleText}" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBlock Style="{StaticResource HintText}" TextWrapping="Wrap" Margin="0,0,0,10"
+                                       Text="Update maps installs the map pack, the maps from the market and the custom-maps folder again (from the download cache) and rebuilds the map lists. Works while the server runs." />
+                            <Button Content="Update maps" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Margin="0,0,0,10"
+                                    Command="{Binding DataContext.UpdateMapsCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    IsEnabled="{Binding CanStart}" />
+                            <ProgressBar Height="{StaticResource ProgressBarHeight}" IsIndeterminate="True" Margin="0,0,0,8"
+                                         Background="{StaticResource ControlBackground}" Foreground="{StaticResource WireHigh}" BorderThickness="0"
+                                         Visibility="{Binding IsBusy, Converter={StaticResource VisibleWhenTrue}}" />
+                            <TextBlock Text="{Binding ResultText}" FontSize="{StaticResource FontSizeSmall}" TextWrapping="Wrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasFailed}" Value="True">
+                                                <Setter Property="Foreground" Value="{StaticResource Warning}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <Border Background="{StaticResource ViewportBackground}" BorderBrush="{StaticResource ConsoleBorder}" BorderThickness="{StaticResource BorderOne}"
+                                    Height="180" Margin="0,8,0,0">
+                                <ItemsControl x:Name="ActivityLog" ItemsSource="{Binding Log}" Focusable="False"
+                                              VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.ScrollUnit="Pixel"
+                                              ScrollViewer.CanContentScroll="True" AutomationProperties.Name="Map update log">
+                                    <ItemsControl.Template>
+                                        <ControlTemplate TargetType="ItemsControl">
+                                            <ScrollViewer Padding="{StaticResource ConsolePadding}" CanContentScroll="True"
+                                                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Focusable="False">
+                                                <ItemsPresenter />
+                                            </ScrollViewer>
+                                        </ControlTemplate>
+                                    </ItemsControl.Template>
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type install:InstallMessage}">
+                                            <TextBlock x:Name="Line" Text="{Binding Text}" FontFamily="{StaticResource MonoFont}"
+                                                       FontSize="{StaticResource FontSizeSmall}" TextWrapping="Wrap"
+                                                       Foreground="{StaticResource TextTertiary}" Margin="10,0,0,0" />
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Step">
+                                                    <Setter TargetName="Line" Property="Foreground" Value="{StaticResource WireHigh}" />
+                                                    <Setter TargetName="Line" Property="Margin" Value="0,4,0,0" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Kind}" Value="Problem">
+                                                    <Setter TargetName="Line" Property="Foreground" Value="{StaticResource Warning}" />
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
                     <Border Style="{StaticResource Card}">
                         <StackPanel>
                             <TextBlock Text="Pictures" Style="{StaticResource CardTitleText}" Margin="0,0,0,8" />
@@ -213,7 +366,8 @@
                                 <Button Content="Open folder" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0"
                                         Command="{Binding OpenCustomMapsFolderCommand}" />
                                 <Button Content="Update maps" Style="{StaticResource SecondaryButton}" Command="{Binding UpdateMapsCommand}"
-                                        ToolTip="Opens the Install screen and installs the map pack and the custom-maps folder" />
+                                        IsEnabled="{Binding Install.CanStart}"
+                                        ToolTip="Installs the custom-maps folder with the rest; the log shows in Map updates above" />
                             </StackPanel>
                         </StackPanel>
                     </Border>
