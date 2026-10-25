@@ -13,7 +13,7 @@
     <AssemblyName>CsServerControl</AssemblyName>
     <RootNamespace>CsServerControl</RootNamespace>
     <Product>CS 1.6 Server Control</Product>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <PackageRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\'))</PackageRoot>
@@ -78,7 +78,7 @@
   </Target>
 
   <!-- -p:PackRelease=true also packs release\CS16-FunServer.zip: everything a
-       LAN PC needs (the exe, README.txt, server-files, tools\maps.csv and the
+       LAN PC needs (the exe, README.txt, LICENSE, server-files, tools\maps.csv and the
        custom-maps hint), without the source code and docs. -->
   <Target Name="PackRelease" AfterTargets="CopyExeToPackageRoot" Condition="'$(PackRelease)' == 'true'">
     <PropertyGroup>
@@ -87,7 +87,7 @@
       <ReleaseZip>$(PackageRoot)release\CS16-FunServer.zip</ReleaseZip>
     </PropertyGroup>
     <ItemGroup>
-      <ReleaseFile Include="$(PackageRoot)README.txt;$(PackageRoot)4_SERVER_CONTROL.exe" />
+      <ReleaseFile Include="$(PackageRoot)README.txt;$(PackageRoot)LICENSE;$(PackageRoot)4_SERVER_CONTROL.exe" />
       <ReleaseServerFile Include="$(PackageRoot)server-files\**\*" />
       <ReleaseToolFile Include="$(PackageRoot)tools\maps.csv" />
       <ReleaseMapsHint Include="$(PackageRoot)custom-maps\PUT_MAPS_HERE.txt" />
