@@ -51,8 +51,7 @@ new bool:gHasUnsavedPoints;
 new bool:gAreZbotHooksRegistered;
 new gPointsFile[128];
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     gIsActive = is_fun_mode(FUN_MODE_GUNGAME) || is_fun_mode(FUN_MODE_DEATHMATCH);
@@ -63,16 +62,14 @@ public plugin_init()
     RegisterHam(Ham_Spawn, "player", "onPlayerSpawned", 1);
 }
 
-public client_putinserver(playerId)
-{
+public client_putinserver(playerId) {
     if (!gIsActive || gAreZbotHooksRegistered || !is_zbot(playerId)) {
         return;
     }
     set_task(FUN_ZBOT_HOOK_DELAY, "registerZbotHooks", TASK_ZBOT_HOOKS + playerId);
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     remove_task(TASK_ZBOT_HOOKS + playerId);
 }
 
@@ -81,8 +78,7 @@ public client_disconnected(playerId)
  * is registered once more on the first bot. All bots share that vtable,
  * a second registration would move every bot twice.
  */
-public registerZbotHooks(taskId)
-{
+public registerZbotHooks(taskId) {
     new botId = taskId - TASK_ZBOT_HOOKS;
     if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
         return;
@@ -92,8 +88,7 @@ public registerZbotHooks(taskId)
     RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
 }
 
-public plugin_cfg()
-{
+public plugin_cfg() {
     if (!gIsActive) {
         return;
     }
@@ -120,15 +115,13 @@ public plugin_cfg()
     set_task(SAVE_INTERVAL_SECONDS, "saveLearnedPoints", TASK_SAVE, _, _, "b");
 }
 
-public plugin_end()
-{
+public plugin_end() {
     if (gIsActive) {
         saveLearnedPoints();
     }
 }
 
-public onPlayerSpawned(playerId)
-{
+public onPlayerSpawned(playerId) {
     if (!is_user_alive(playerId) || gPointCount == 0) {
         return;
     }
@@ -154,8 +147,7 @@ public onPlayerSpawned(playerId)
  * Learned points are preferred once there are enough of them, the team
  * spawns at the end of the list then only fill gaps.
  */
-bool:findFreeSpot(playerId, Float:spot[3])
-{
+bool:findFreeSpot(playerId, Float:spot[3]) {
     new usableCount = gLearnedCount >= MIN_LEARNED_POINTS ? gLearnedCount : gPointCount;
 
     for (new attempt = 0; attempt < SPAWN_ATTEMPTS; attempt++) {
@@ -172,8 +164,7 @@ bool:findFreeSpot(playerId, Float:spot[3])
     return false;
 }
 
-bool:isNearOtherPlayer(playerId, const Float:point[3])
-{
+bool:isNearOtherPlayer(playerId, const Float:point[3]) {
     new players[MAX_PLAYERS], playerCount;
     get_players(players, playerCount, "a");
 
@@ -190,8 +181,7 @@ bool:isNearOtherPlayer(playerId, const Float:point[3])
     return false;
 }
 
-bool:isRoomForPlayer(playerId, const Float:point[3])
-{
+bool:isRoomForPlayer(playerId, const Float:point[3]) {
     new trace = create_tr2();
     engfunc(EngFunc_TraceHull, point, point, DONT_IGNORE_MONSTERS, HULL_HUMAN_INDEX, playerId, trace);
     new bool:isFree = !get_tr2(trace, TR_StartSolid) && !get_tr2(trace, TR_AllSolid);
@@ -204,8 +194,7 @@ bool:isRoomForPlayer(playerId, const Float:point[3])
  * itself (not on boxes, lifts or other players), standing, not in water,
  * not on a ladder and not flying through walls with noclip.
  */
-public learnPoints()
-{
+public learnPoints() {
     if (gPointCount >= MAX_SPAWN_POINTS) {
         return;
     }
@@ -231,8 +220,7 @@ public learnPoints()
     }
 }
 
-bool:isSafeStandingSpot(playerId)
-{
+bool:isSafeStandingSpot(playerId) {
     new flags = pev(playerId, pev_flags);
     if (!(flags & FL_ONGROUND) || (flags & FL_DUCKING)) {
         return false;
@@ -246,8 +234,7 @@ bool:isSafeStandingSpot(playerId)
     return true;
 }
 
-bool:isKnownPoint(const Float:origin[3])
-{
+bool:isKnownPoint(const Float:origin[3]) {
     for (new i = 0; i < gPointCount; i++) {
         if (get_distance_f(gPoints[i], origin) < MIN_POINT_DISTANCE) {
             return true;
@@ -260,8 +247,7 @@ bool:isKnownPoint(const Float:origin[3])
  * Inserts a learned point at the end of the learned block. The team spawns
  * that follow it move up by one, so the list stays learned first.
  */
-addPointAt(index, const Float:origin[3])
-{
+addPointAt(index, const Float:origin[3]) {
     for (new i = gPointCount; i > index; i--) {
         gPoints[i][0] = gPoints[i - 1][0];
         gPoints[i][1] = gPoints[i - 1][1];
@@ -273,8 +259,7 @@ addPointAt(index, const Float:origin[3])
     gPointCount++;
 }
 
-addTeamSpawnPoints()
-{
+addTeamSpawnPoints() {
     new const spawnClasses[][] = { "info_player_start", "info_player_deathmatch" };
     new Float:origin[3];
 
@@ -293,8 +278,7 @@ addTeamSpawnPoints()
     }
 }
 
-loadLearnedPoints()
-{
+loadLearnedPoints() {
     new file = fopen(gPointsFile, "rt");
     if (!file) {
         return;
@@ -317,8 +301,7 @@ loadLearnedPoints()
     fclose(file);
 }
 
-public saveLearnedPoints()
-{
+public saveLearnedPoints() {
     if (!gHasUnsavedPoints) {
         return;
     }

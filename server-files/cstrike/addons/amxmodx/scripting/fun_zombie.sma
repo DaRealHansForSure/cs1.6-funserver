@@ -51,8 +51,7 @@ new gCountdownSecondsLeft;
 new gHudSync;
 new gScreenFadeMessage;
 
-public plugin_precache()
-{
+public plugin_precache() {
     if (!is_fun_mode(FUN_MODE_ZOMBIE)) {
         return;
     }
@@ -61,8 +60,7 @@ public plugin_precache()
     precache_sound(ZOMBIE_DEATH_SOUND);
 }
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     if (!is_fun_mode(FUN_MODE_ZOMBIE)) {
@@ -88,8 +86,7 @@ public plugin_init()
     gScreenFadeMessage = get_user_msgid("ScreenFade");
 }
 
-public client_putinserver(playerId)
-{
+public client_putinserver(playerId) {
     gIsZombie[playerId] = false;
 
     if (gIsZombieMode && !gAreZbotHooksRegistered && is_zbot(playerId)) {
@@ -102,8 +99,7 @@ public client_putinserver(playerId)
  * are registered once more on the first bot. All bots share that vtable,
  * a second registration would run every handler twice.
  */
-public registerZbotHooks(taskId)
-{
+public registerZbotHooks(taskId) {
     new botId = taskId - TASK_ZBOT_HOOKS;
     if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
         return;
@@ -117,8 +113,7 @@ public registerZbotHooks(taskId)
     RegisterHamFromEntity(Ham_AddPlayerItem, botId, "onAddPlayerItem");
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     remove_task(TASK_ZOMBIE_RESPAWN + playerId);
     remove_task(TASK_ZBOT_HOOKS + playerId);
 
@@ -131,8 +126,7 @@ public client_disconnected(playerId)
     }
 }
 
-public onNewRound()
-{
+public onNewRound() {
     gIsInfectionStarted = false;
     gIsRoundRunning = false;
     remove_task(TASK_COUNTDOWN);
@@ -152,15 +146,13 @@ public onNewRound()
     }
 }
 
-public onRoundStart()
-{
+public onRoundStart() {
     gIsRoundRunning = true;
     gCountdownSecondsLeft = INFECTION_COUNTDOWN_SECONDS;
     set_task(1.0, "tickCountdown", TASK_COUNTDOWN, _, _, "a", INFECTION_COUNTDOWN_SECONDS);
 }
 
-public onRoundEnd()
-{
+public onRoundEnd() {
     gIsRoundRunning = false;
     remove_task(TASK_COUNTDOWN);
 
@@ -176,8 +168,7 @@ public onRoundEnd()
     }
 }
 
-public tickCountdown()
-{
+public tickCountdown() {
     gCountdownSecondsLeft--;
 
     if (gCountdownSecondsLeft > 0) {
@@ -197,8 +188,7 @@ public tickCountdown()
     infectRandomHumans(max(1, humanCount / PLAYERS_PER_FIRST_ZOMBIE));
 }
 
-infectRandomHumans(zombieCount)
-{
+infectRandomHumans(zombieCount) {
     for (new i = 0; i < zombieCount; i++) {
         new humans[MAX_PLAYERS], humanCount = 0;
         collectAliveHumans(humans, humanCount);
@@ -217,8 +207,7 @@ infectRandomHumans(zombieCount)
     }
 }
 
-turnIntoZombie(playerId, health)
-{
+turnIntoZombie(playerId, health) {
     gIsZombie[playerId] = true;
 
     cs_set_user_team(playerId, CS_TEAM_T, CS_T_LEET);
@@ -228,8 +217,7 @@ turnIntoZombie(playerId, health)
     flashScreenGreen(playerId);
 }
 
-applyZombieTraits(playerId, health)
-{
+applyZombieTraits(playerId, health) {
     strip_user_weapons(playerId);
     give_item(playerId, "weapon_knife");
 
@@ -246,15 +234,13 @@ applyZombieTraits(playerId, health)
     ExecuteHamB(Ham_CS_Player_ResetMaxSpeed, playerId);
 }
 
-clearZombieTraits(playerId)
-{
+clearZombieTraits(playerId) {
     set_user_gravity(playerId, 1.0);
     set_user_rendering(playerId);
     cs_set_user_nvg(playerId, 0);
 }
 
-flashScreenGreen(playerId)
-{
+flashScreenGreen(playerId) {
     const FADE_DURATION_UNITS = 1 << 12;
     const FADE_IN = 0x0000;
 
@@ -269,8 +255,7 @@ flashScreenGreen(playerId)
     message_end();
 }
 
-public onPlayerSpawned(playerId)
-{
+public onPlayerSpawned(playerId) {
     if (!is_user_alive(playerId)) {
         return;
     }
@@ -284,8 +269,7 @@ public onPlayerSpawned(playerId)
     cs_set_user_money(playerId, HUMAN_MONEY, 0);
 }
 
-public onPlayerKilled(victimId, killerId, shouldGib)
-{
+public onPlayerKilled(victimId, killerId, shouldGib) {
     if (!gIsZombie[victimId]) {
         return;
     }
@@ -297,8 +281,7 @@ public onPlayerKilled(victimId, killerId, shouldGib)
     }
 }
 
-public respawnZombie(taskId)
-{
+public respawnZombie(taskId) {
     new playerId = taskId - TASK_ZOMBIE_RESPAWN;
 
     new canRespawn = gIsRoundRunning && gIsZombie[playerId] && is_user_connected(playerId) && !is_user_alive(playerId);
@@ -307,8 +290,7 @@ public respawnZombie(taskId)
     }
 }
 
-public onPlayerTakeDamage(victimId, inflictorId, attackerId, Float:damage, damageBits)
-{
+public onPlayerTakeDamage(victimId, inflictorId, attackerId, Float:damage, damageBits) {
     new isZombieHittingHuman = (is_user_connected(attackerId) && attackerId != victimId && gIsZombie[attackerId] && !gIsZombie[victimId]);
     if (!isZombieHittingHuman) {
         return HAM_IGNORED;
@@ -323,8 +305,7 @@ public onPlayerTakeDamage(victimId, inflictorId, attackerId, Float:damage, damag
     return HAM_SUPERCEDE;
 }
 
-infectByAttack(victimId, attackerId)
-{
+infectByAttack(victimId, attackerId) {
     turnIntoZombie(victimId, ZOMBIE_HEALTH);
     set_user_frags(attackerId, get_user_frags(attackerId) + 1);
 
@@ -338,8 +319,7 @@ infectByAttack(victimId, attackerId)
     }
 }
 
-announceLastHuman()
-{
+announceLastHuman() {
     new humans[MAX_PLAYERS], humanCount = 0;
     collectAliveHumans(humans, humanCount);
     if (humanCount == 0) {
@@ -353,16 +333,14 @@ announceLastHuman()
     ShowSyncHudMsg(0, gHudSync, "%s is the last human!", lastHumanName);
 }
 
-public onResetMaxSpeed(playerId)
-{
+public onResetMaxSpeed(playerId) {
     // A max speed of 1 means the player is frozen (freeze time), leave that alone.
     if (is_user_alive(playerId) && gIsZombie[playerId] && get_user_maxspeed(playerId) > 1.0) {
         set_user_maxspeed(playerId, ZOMBIE_SPEED);
     }
 }
 
-public onAddPlayerItem(playerId, itemEntity)
-{
+public onAddPlayerItem(playerId, itemEntity) {
     if (!gIsZombie[playerId] || !pev_valid(itemEntity)) {
         return HAM_IGNORED;
     }
@@ -377,16 +355,14 @@ public onAddPlayerItem(playerId, itemEntity)
     return HAM_SUPERCEDE;
 }
 
-public onWeaponTouched(weaponEntity, toucherId)
-{
+public onWeaponTouched(weaponEntity, toucherId) {
     if (is_user_alive(toucherId) && gIsZombie[toucherId]) {
         return HAM_SUPERCEDE;
     }
     return HAM_IGNORED;
 }
 
-collectAliveHumans(humans[MAX_PLAYERS], &humanCount)
-{
+collectAliveHumans(humans[MAX_PLAYERS], &humanCount) {
     humanCount = 0;
     for (new playerId = 1; playerId <= MaxClients; playerId++) {
         if (is_user_alive(playerId) && !gIsZombie[playerId]) {
@@ -396,15 +372,13 @@ collectAliveHumans(humans[MAX_PLAYERS], &humanCount)
     }
 }
 
-countAliveHumans()
-{
+countAliveHumans() {
     new humans[MAX_PLAYERS], humanCount = 0;
     collectAliveHumans(humans, humanCount);
     return humanCount;
 }
 
-countAliveZombies()
-{
+countAliveZombies() {
     new zombieCount = 0;
     for (new playerId = 1; playerId <= MaxClients; playerId++) {
         if (is_user_alive(playerId) && gIsZombie[playerId]) {

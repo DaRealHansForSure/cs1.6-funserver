@@ -93,8 +93,7 @@ new bool:gAreZbotHooksRegistered;
 new gKillsPerLevelCvar;
 new gHudSync;
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     if (!is_fun_mode(FUN_MODE_GUNGAME)) {
@@ -114,8 +113,7 @@ public plugin_init()
     set_task(GRENADE_REFILL_INTERVAL_SECONDS, "refillGrenades", TASK_GRENADE_REFILL, _, _, "b");
 }
 
-public client_putinserver(playerId)
-{
+public client_putinserver(playerId) {
     gPlayerLevel[playerId] = 0;
     gKillsOnLevel[playerId] = 0;
 
@@ -124,8 +122,7 @@ public client_putinserver(playerId)
     }
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     remove_task(TASK_EQUIP_PLAYER + playerId);
     remove_task(TASK_ZBOT_HOOKS + playerId);
 }
@@ -135,8 +132,7 @@ public client_disconnected(playerId)
  * is registered once more on the first bot. All bots share that vtable,
  * a second registration would equip every bot twice.
  */
-public registerZbotHooks(taskId)
-{
+public registerZbotHooks(taskId) {
     new botId = taskId - TASK_ZBOT_HOOKS;
     if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
         return;
@@ -146,13 +142,11 @@ public registerZbotHooks(taskId)
     RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
 }
 
-public blockCommand(playerId)
-{
+public blockCommand(playerId) {
     return PLUGIN_HANDLED;
 }
 
-public onWeaponTouched(weaponEntity, toucherId)
-{
+public onWeaponTouched(weaponEntity, toucherId) {
     // Picking up dropped guns would skip the level system.
     if (is_user_alive(toucherId)) {
         return HAM_SUPERCEDE;
@@ -160,8 +154,7 @@ public onWeaponTouched(weaponEntity, toucherId)
     return HAM_IGNORED;
 }
 
-public onPlayerSpawned(playerId)
-{
+public onPlayerSpawned(playerId) {
     if (!is_user_alive(playerId)) {
         return;
     }
@@ -172,8 +165,7 @@ public onPlayerSpawned(playerId)
     set_task(EQUIP_DELAY_SECONDS, "equipForLevel", TASK_EQUIP_PLAYER + playerId);
 }
 
-public equipForLevel(taskId)
-{
+public equipForLevel(taskId) {
     new playerId = taskId - TASK_EQUIP_PLAYER;
     if (!is_user_alive(playerId)) {
         return;
@@ -196,8 +188,7 @@ public equipForLevel(taskId)
     showLevel(playerId);
 }
 
-giveFullBackpackAmmo(playerId, const weaponName[])
-{
+giveFullBackpackAmmo(playerId, const weaponName[]) {
     new weaponId = get_weaponid(weaponName);
     if (weaponId == CSW_KNIFE || weaponId == CSW_HEGRENADE || weaponId == 0) {
         return;
@@ -207,8 +198,7 @@ giveFullBackpackAmmo(playerId, const weaponName[])
     cs_set_user_bpammo(playerId, weaponId, 200);
 }
 
-public onDeathMessage()
-{
+public onDeathMessage() {
     if (gIsGameWon) {
         return;
     }
@@ -245,8 +235,7 @@ public onDeathMessage()
     }
 }
 
-stealLevel(killerId, victimId)
-{
+stealLevel(killerId, victimId) {
     new killerName[MAX_NAME_LENGTH], victimName[MAX_NAME_LENGTH];
     get_user_name(killerId, killerName, charsmax(killerName));
     get_user_name(victimId, victimName, charsmax(victimName));
@@ -258,8 +247,7 @@ stealLevel(killerId, victimId)
     }
 }
 
-changeLevel(playerId, levelDelta)
-{
+changeLevel(playerId, levelDelta) {
     new lastLevel = sizeof(LEVEL_WEAPONS) - 1;
     gPlayerLevel[playerId] = clamp(gPlayerLevel[playerId] + levelDelta, 0, lastLevel);
     gKillsOnLevel[playerId] = 0;
@@ -276,8 +264,7 @@ changeLevel(playerId, levelDelta)
     }
 }
 
-showLevel(playerId)
-{
+showLevel(playerId) {
     new level = gPlayerLevel[playerId];
     new killsNeeded = get_pcvar_num(gKillsPerLevelCvar);
 
@@ -285,8 +272,7 @@ showLevel(playerId)
     ShowSyncHudMsg(playerId, gHudSync, "Level %d/%d: %s  (%d/%d Kills)", level + 1, sizeof(LEVEL_WEAPONS), LEVEL_TITLES[level], gKillsOnLevel[playerId], killsNeeded);
 }
 
-public refillGrenades()
-{
+public refillGrenades() {
     new grenadeLevel = sizeof(LEVEL_WEAPONS) - 2;
 
     new players[MAX_PLAYERS], playerCount;
@@ -300,8 +286,7 @@ public refillGrenades()
     }
 }
 
-declareWinner(winnerId)
-{
+declareWinner(winnerId) {
     gIsGameWon = true;
 
     new winnerName[MAX_NAME_LENGTH];
@@ -315,8 +300,7 @@ declareWinner(winnerId)
     set_task(END_MAP_DELAY_SECONDS, "changeToNextMap", TASK_END_MAP);
 }
 
-public changeToNextMap()
-{
+public changeToNextMap() {
     new nextMap[MAX_MAPNAME_LENGTH];
     get_cvar_string("amx_nextmap", nextMap, charsmax(nextMap));
 

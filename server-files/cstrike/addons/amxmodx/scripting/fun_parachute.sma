@@ -16,16 +16,14 @@ const Float:MAX_FALL_SPEED = 100.0;
 
 new gEnabledCvar;
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     gEnabledCvar = create_cvar("fun_parachute_enabled", "1", _, "Parachute on (1) or off (0)", true, 0.0, true, 1.0);
     register_forward(FM_PlayerPreThink, "onPlayerPreThink");
 }
 
-public onPlayerPreThink(playerId)
-{
+public onPlayerPreThink(playerId) {
     if (!get_pcvar_num(gEnabledCvar) || !is_user_alive(playerId)) {
         return FMRES_IGNORED;
     }

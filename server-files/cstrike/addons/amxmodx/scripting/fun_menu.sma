@@ -78,8 +78,7 @@ new gSelectedTarget[MAX_PLAYERS + 1][TARGET_LENGTH];
 new gModeAccessCallback;
 new gPlayerFunAccessCallback;
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     register_clcmd("say /fun", "cmdOpenMenu");
@@ -92,16 +91,14 @@ public plugin_init()
     gPlayerFunAccessCallback = menu_makecallback("callbackPlayerFunAccess");
 }
 
-public cmdOpenMenu(playerId)
-{
+public cmdOpenMenu(playerId) {
     showMainMenu(playerId);
     return PLUGIN_HANDLED;
 }
 
 // --- Main menu ---------------------------------------------------------------
 
-showMainMenu(playerId)
-{
+showMainMenu(playerId) {
     new activeMode[FUN_MODE_LENGTH];
     get_fun_mode(activeMode, charsmax(activeMode));
 
@@ -120,8 +117,7 @@ showMainMenu(playerId)
     menu_display(playerId, menu);
 }
 
-public handleMainMenu(playerId, menu, item)
-{
+public handleMainMenu(playerId, menu, item) {
     menu_destroy(menu);
 
     switch (item) {
@@ -144,16 +140,14 @@ public handleMainMenu(playerId, menu, item)
     return PLUGIN_HANDLED;
 }
 
-public callbackModeAccess(playerId, menu, item)
-{
+public callbackModeAccess(playerId, menu, item) {
     if (get_user_flags(playerId) & MODE_ACCESS_FLAG) {
         return ITEM_ENABLED;
     }
     return ITEM_DISABLED;
 }
 
-public callbackPlayerFunAccess(playerId, menu, item)
-{
+public callbackPlayerFunAccess(playerId, menu, item) {
     if (get_user_flags(playerId) & PLAYER_FUN_ACCESS_FLAG) {
         return ITEM_ENABLED;
     }
@@ -162,8 +156,7 @@ public callbackPlayerFunAccess(playerId, menu, item)
 
 // --- Switch mode ---------------------------------------------------------------
 
-showModeMenu(playerId)
-{
+showModeMenu(playerId) {
     new activeMode[FUN_MODE_LENGTH];
     get_fun_mode(activeMode, charsmax(activeMode));
 
@@ -180,8 +173,7 @@ showModeMenu(playerId)
     menu_display(playerId, menu);
 }
 
-public handleModeMenu(playerId, menu, item)
-{
+public handleModeMenu(playerId, menu, item) {
     menu_destroy(menu);
 
     if (item < 0 || item >= sizeof(MODE_IDS)) {
@@ -194,8 +186,7 @@ public handleModeMenu(playerId, menu, item)
 
 // --- Change map ----------------------------------------------------------------
 
-showMapMenu(playerId)
-{
+showMapMenu(playerId) {
     // mapcyclefile always points at the current mode's list, so the admin only
     // sees maps that fit what is running.
     new mapCycleFile[64];
@@ -250,8 +241,7 @@ showMapMenu(playerId)
     menu_display(playerId, menu);
 }
 
-public handleMapMenu(playerId, menu, item)
-{
+public handleMapMenu(playerId, menu, item) {
     if (item < 0) {
         menu_destroy(menu);
         return PLUGIN_HANDLED;
@@ -267,8 +257,7 @@ public handleMapMenu(playerId, menu, item)
 
 // --- Player fun ----------------------------------------------------------------
 
-showTargetMenu(playerId)
-{
+showTargetMenu(playerId) {
     new menu = menu_create("\yPlayer fun^n\wWho?", "handleTargetMenu");
     menu_additem(menu, "Everybody", "@ALL");
 
@@ -286,8 +275,7 @@ showTargetMenu(playerId)
     menu_display(playerId, menu);
 }
 
-public handleTargetMenu(playerId, menu, item)
-{
+public handleTargetMenu(playerId, menu, item) {
     if (item < 0) {
         menu_destroy(menu);
         return PLUGIN_HANDLED;
@@ -301,8 +289,7 @@ public handleTargetMenu(playerId, menu, item)
     return PLUGIN_HANDLED;
 }
 
-showActionMenu(playerId)
-{
+showActionMenu(playerId) {
     new targetLabel[MAX_NAME_LENGTH];
     describeTarget(gSelectedTarget[playerId], targetLabel, charsmax(targetLabel));
 
@@ -316,8 +303,7 @@ showActionMenu(playerId)
     menu_display(playerId, menu);
 }
 
-public handleActionMenu(playerId, menu, item)
-{
+public handleActionMenu(playerId, menu, item) {
     menu_destroy(menu);
 
     if (item < 0) {
@@ -354,8 +340,7 @@ public handleActionMenu(playerId, menu, item)
     return PLUGIN_HANDLED;
 }
 
-showGlowMenu(playerId)
-{
+showGlowMenu(playerId) {
     new menu = menu_create("\yGlow color", "handleGlowMenu");
     for (new colorIndex = 0; colorIndex < sizeof(GLOW_COLORS); colorIndex++) {
         menu_additem(menu, GLOW_COLORS[colorIndex]);
@@ -363,8 +348,7 @@ showGlowMenu(playerId)
     menu_display(playerId, menu);
 }
 
-public handleGlowMenu(playerId, menu, item)
-{
+public handleGlowMenu(playerId, menu, item) {
     menu_destroy(menu);
 
     if (item < 0 || item >= sizeof(GLOW_COLORS)) {
@@ -381,8 +365,7 @@ public handleGlowMenu(playerId, menu, item)
  * player it flips the current state, for everybody it switches on unless
  * the first living player already has it, so pressing twice turns it off.
  */
-bool:isToggleOn(const target[], action)
-{
+bool:isToggleOn(const target[], action) {
     new referenceId = 0;
     if (target[0] == '#') {
         referenceId = find_player_ex(FindPlayer_MatchUserId, str_to_num(target[1]));
@@ -404,8 +387,7 @@ bool:isToggleOn(const target[], action)
     return !get_user_noclip(referenceId);
 }
 
-describeTarget(const target[], label[], length)
-{
+describeTarget(const target[], label[], length) {
     if (target[0] != '#') {
         copy(label, length, "Everybody");
         return;
@@ -419,8 +401,7 @@ describeTarget(const target[], label[], length)
     get_user_name(targetId, label, length);
 }
 
-findModeIndex(const modeId[])
-{
+findModeIndex(const modeId[]) {
     for (new modeIndex = 0; modeIndex < sizeof(MODE_IDS); modeIndex++) {
         if (equal(MODE_IDS[modeIndex], modeId)) {
             return modeIndex;

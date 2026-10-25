@@ -31,8 +31,7 @@ new gTrapperId = NO_PLAYER;
 new gLastTrapperId = NO_PLAYER;
 new gHudSync;
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     gIsDeathrunMode = is_fun_mode(FUN_MODE_DEATHRUN);
@@ -46,8 +45,7 @@ public plugin_init()
     gHudSync = CreateHudSyncObj();
 }
 
-public client_putinserver(playerId)
-{
+public client_putinserver(playerId) {
     if (!gIsDeathrunMode || gAreZbotHooksRegistered || !is_zbot(playerId)) {
         return;
     }
@@ -59,8 +57,7 @@ public client_putinserver(playerId)
  * is registered once more on the first bot. All bots share that vtable,
  * a second registration would run the handler twice per spawn.
  */
-public registerZbotHooks(taskId)
-{
+public registerZbotHooks(taskId) {
     new botId = taskId - TASK_ZBOT_HOOKS;
     if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
         return;
@@ -70,8 +67,7 @@ public registerZbotHooks(taskId)
     RegisterHamFromEntity(Ham_Spawn, botId, "onPlayerSpawned", 1);
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     remove_task(TASK_EQUIP_PLAYER + playerId);
     remove_task(TASK_ZBOT_HOOKS + playerId);
 
@@ -83,8 +79,7 @@ public client_disconnected(playerId)
     }
 }
 
-public onNewRound()
-{
+public onNewRound() {
     gTrapperId = chooseTrapper();
     if (gTrapperId == NO_PLAYER) {
         return;
@@ -120,8 +115,7 @@ public onNewRound()
  * Picks a random human who was not the trapper last round. Falls back to a
  * bot, and to the last trapper only when nobody else is playing.
  */
-chooseTrapper()
-{
+chooseTrapper() {
     new humans[MAX_PLAYERS], humanCount = 0;
     new bots[MAX_PLAYERS], botCount = 0;
 
@@ -154,8 +148,7 @@ chooseTrapper()
     return NO_PLAYER;
 }
 
-public onPlayerSpawned(playerId)
-{
+public onPlayerSpawned(playerId) {
     if (!is_user_alive(playerId)) {
         return;
     }
@@ -171,8 +164,7 @@ public onPlayerSpawned(playerId)
     set_task(EQUIP_DELAY_SECONDS, "equipKnifeOnly", TASK_EQUIP_PLAYER + playerId);
 }
 
-public equipKnifeOnly(taskId)
-{
+public equipKnifeOnly(taskId) {
     new playerId = taskId - TASK_EQUIP_PLAYER;
     if (!is_user_alive(playerId)) {
         return;
@@ -182,8 +174,7 @@ public equipKnifeOnly(taskId)
     give_item(playerId, "weapon_knife");
 }
 
-public CS_OnBuyAttempt(playerId, item)
-{
+public CS_OnBuyAttempt(playerId, item) {
     if (gIsDeathrunMode) {
         return PLUGIN_HANDLED;
     }

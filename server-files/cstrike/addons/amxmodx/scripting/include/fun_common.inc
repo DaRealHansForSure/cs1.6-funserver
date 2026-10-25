@@ -21,8 +21,7 @@ stock const FUN_MODE_DEATHRUN[] = "deathrun";
 /**
  * Copies the active game mode into the buffer, falling back to classic.
  */
-stock get_fun_mode(mode[], length)
-{
+stock get_fun_mode(mode[], length) {
     get_localinfo(FUN_MODE_KEY, mode, length);
 
     if (mode[0] == EOS) {
@@ -33,8 +32,7 @@ stock get_fun_mode(mode[], length)
 /**
  * Returns true when the given mode is the one currently running.
  */
-stock bool:is_fun_mode(const wantedMode[])
-{
+stock bool:is_fun_mode(const wantedMode[]) {
     new activeMode[FUN_MODE_LENGTH];
     get_fun_mode(activeMode, charsmax(activeMode));
 
@@ -53,8 +51,7 @@ stock bool:is_fun_mode(const wantedMode[])
  * bot_quota cvar, so other fake clients (which share the CBasePlayer vtable
  * and would get every hook twice) are not mistaken for zBot bots.
  */
-stock bool:is_zbot(playerId)
-{
+stock bool:is_zbot(playerId) {
     if (!is_user_bot(playerId)) {
         return false;
     }

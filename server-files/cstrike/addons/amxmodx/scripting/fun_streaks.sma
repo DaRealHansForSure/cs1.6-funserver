@@ -43,34 +43,29 @@ new gEnabledCvar;
 
 new const ROCKET_SOUND[] = "weapons/rocketfire1.wav";
 
-public plugin_precache()
-{
+public plugin_precache() {
     precache_sound(ROCKET_SOUND);
 }
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     gEnabledCvar = create_cvar("fun_streaks_enabled", "1", _, "Kill streak rewards on (1) or off (0)", true, 0.0, true, 1.0);
     register_event("DeathMsg", "onDeath", "a");
 }
 
-public client_putinserver(playerId)
-{
+public client_putinserver(playerId) {
     gStreak[playerId] = 0;
     gIsGlowing[playerId] = false;
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     remove_task(TASK_END_GLOW + playerId);
     gStreak[playerId] = 0;
     gIsGlowing[playerId] = false;
 }
 
-public onDeath()
-{
+public onDeath() {
     new killerId = read_data(1);
     new victimId = read_data(2);
 
@@ -94,8 +89,7 @@ public onDeath()
     rewardStreak(killerId, gStreak[killerId]);
 }
 
-rewardStreak(playerId, streak)
-{
+rewardStreak(playerId, streak) {
     new health = min(get_user_health(playerId) + STREAK_HEALTH_BONUS, MAX_STREAK_HEALTH);
     set_user_health(playerId, health);
     startStreakGlow(playerId);
@@ -114,8 +108,7 @@ rewardStreak(playerId, streak)
     client_print(playerId, print_chat, "[Fun] %d kills in a row! +%d HP.", streak, STREAK_HEALTH_BONUS);
 }
 
-rocketJump(playerId)
-{
+rocketJump(playerId) {
     new Float:velocity[3];
     pev(playerId, pev_velocity, velocity);
     velocity[2] = ROCKET_JUMP_SPEED;
@@ -123,8 +116,7 @@ rocketJump(playerId)
     emit_sound(playerId, CHAN_WEAPON, ROCKET_SOUND, VOL_NORM, ATTN_NORM, 0, PITCH_NORM);
 }
 
-startStreakGlow(playerId)
-{
+startStreakGlow(playerId) {
     // A streak during a streak glow keeps the look saved by the first one.
     if (!gIsGlowing[playerId]) {
         gSavedRenderFx[playerId] = pev(playerId, pev_renderfx);
@@ -139,8 +131,7 @@ startStreakGlow(playerId)
     set_task(STREAK_GLOW_SECONDS, "endStreakGlow", TASK_END_GLOW + playerId);
 }
 
-public endStreakGlow(taskId)
-{
+public endStreakGlow(taskId) {
     new playerId = taskId - TASK_END_GLOW;
     if (!gIsGlowing[playerId]) {
         return;

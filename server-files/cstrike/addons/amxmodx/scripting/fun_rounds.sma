@@ -120,8 +120,7 @@ new gEveryCvar;
 new gHudSync;
 new gJuggernautId = NO_PLAYER;
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     gEnabledCvar = create_cvar("fun_rounds_enabled", "1", _, "Fun rounds on (1) or off (0)", true, 0.0, true, 1.0);
@@ -143,22 +142,19 @@ public plugin_init()
     gHudSync = CreateHudSyncObj();
 }
 
-public plugin_cfg()
-{
+public plugin_cfg() {
     // A mode switch always changes the map, so checking once per map is enough.
     gIsEnabledHere = is_fun_mode(FUN_MODE_CLASSIC) && !isSpecialMap();
 }
 
-public client_putinserver(playerId)
-{
+public client_putinserver(playerId) {
     if (!gIsEnabledHere || gAreZbotHooksRegistered || !is_zbot(playerId)) {
         return;
     }
     set_task(FUN_ZBOT_HOOK_DELAY, "registerZbotHooks", TASK_ZBOT_HOOKS + playerId);
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     remove_task(TASK_EQUIP_PLAYER + playerId);
     remove_task(TASK_ZBOT_HOOKS + playerId);
 }
@@ -168,8 +164,7 @@ public client_disconnected(playerId)
  * are registered once more on the first bot. All bots share that vtable,
  * a second registration would run every handler twice.
  */
-public registerZbotHooks(taskId)
-{
+public registerZbotHooks(taskId) {
     new botId = taskId - TASK_ZBOT_HOOKS;
     if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
         return;
@@ -182,8 +177,7 @@ public registerZbotHooks(taskId)
     RegisterHamFromEntity(Ham_CS_Player_ResetMaxSpeed, botId, "onResetMaxSpeed", 1);
 }
 
-public cmdForceEvent(adminId, level, commandId)
-{
+public cmdForceEvent(adminId, level, commandId) {
     if (!cmd_access(adminId, level, commandId, 2)) {
         return PLUGIN_HANDLED;
     }
@@ -220,8 +214,7 @@ public cmdForceEvent(adminId, level, commandId)
     return PLUGIN_HANDLED;
 }
 
-public onNewRound()
-{
+public onNewRound() {
     remove_task(TASK_HE_REFILL);
     gActiveEvent = NO_EVENT;
     gJuggernautId = NO_PLAYER;
@@ -256,8 +249,7 @@ public onNewRound()
     }
 }
 
-chooseEventForRound()
-{
+chooseEventForRound() {
     if (gIsForcedOff) {
         gIsForcedOff = false;
         return NO_EVENT;
@@ -279,8 +271,7 @@ chooseEventForRound()
  * Picks a random event that differs from the previous one, so the same
  * surprise never comes twice in a row.
  */
-pickRandomEvent()
-{
+pickRandomEvent() {
     new eventIndex = random(FunEvent);
     if (eventIndex == gLastEvent) {
         eventIndex = (eventIndex + 1 + random(FunEvent - 1)) % FunEvent;
@@ -288,16 +279,14 @@ pickRandomEvent()
     return eventIndex;
 }
 
-announceEvent(eventIndex)
-{
+announceEvent(eventIndex) {
     set_hudmessage(255, 200, 0, -1.0, 0.25, 1, 3.0, 6.0, 0.1, 0.5);
     ShowSyncHudMsg(0, gHudSync, "FUN ROUND: %s^n%s", EVENT_TITLES[eventIndex], EVENT_HINTS[eventIndex]);
     client_print(0, print_chat, "[Fun] Fun round: %s - %s", EVENT_TITLES[eventIndex], EVENT_HINTS[eventIndex]);
     client_cmd(0, "spk buttons/bell1");
 }
 
-public onPlayerSpawned(playerId)
-{
+public onPlayerSpawned(playerId) {
     if (!is_user_alive(playerId)) {
         return;
     }
@@ -314,8 +303,7 @@ public onPlayerSpawned(playerId)
     set_task(EQUIP_DELAY_SECONDS, "applyEventToPlayer", TASK_EQUIP_PLAYER + playerId);
 }
 
-public applyEventToPlayer(taskId)
-{
+public applyEventToPlayer(taskId) {
     new playerId = taskId - TASK_EQUIP_PLAYER;
     if (!is_user_alive(playerId)) {
         return;
@@ -361,8 +349,7 @@ public applyEventToPlayer(taskId)
  * Terrorist side, everybody else on CT. The normal team balance mixes the
  * teams again for the next round. Needs at least two players.
  */
-bool:setUpJuggernaut()
-{
+bool:setUpJuggernaut() {
     new candidates[MAX_PLAYERS], candidateCount = 0;
     for (new playerId = 1; playerId <= MaxClients; playerId++) {
         if (!is_user_connected(playerId) || is_user_hltv(playerId)) {
@@ -388,8 +375,7 @@ bool:setUpJuggernaut()
     return true;
 }
 
-equipJuggernaut(playerId)
-{
+equipJuggernaut(playerId) {
     equipOnly(playerId, "weapon_m249");
     cs_set_user_bpammo(playerId, CSW_M249, JUGGERNAUT_RESERVE_AMMO);
     set_user_health(playerId, JUGGERNAUT_HEALTH);
@@ -401,8 +387,7 @@ equipJuggernaut(playerId)
  * Leaves the player with a knife plus the given weapon (empty for none) and
  * returns the entity of that weapon.
  */
-equipOnly(playerId, const weaponName[])
-{
+equipOnly(playerId, const weaponName[]) {
     strip_user_weapons(playerId);
     give_item(playerId, "weapon_knife");
 
@@ -412,8 +397,7 @@ equipOnly(playerId, const weaponName[])
     return give_item(playerId, weaponName);
 }
 
-public refillGrenades()
-{
+public refillGrenades() {
     new players[MAX_PLAYERS], playerCount;
     get_players(players, playerCount, "a");
 
@@ -424,8 +408,7 @@ public refillGrenades()
     }
 }
 
-public onDeath()
-{
+public onDeath() {
     if (gActiveEvent != EVENT_DEAGLE) {
         return;
     }
@@ -442,8 +425,7 @@ public onDeath()
     }
 }
 
-findWeaponOfPlayer(playerId, const weaponName[])
-{
+findWeaponOfPlayer(playerId, const weaponName[]) {
     new weaponId = -1;
     while ((weaponId = engfunc(EngFunc_FindEntityByString, weaponId, "classname", weaponName)) > 0) {
         if (pev(weaponId, pev_owner) == playerId) {
@@ -453,8 +435,7 @@ findWeaponOfPlayer(playerId, const weaponName[])
     return 0;
 }
 
-public onPlayerTakeDamage(victimId, inflictorId, attackerId, Float:damage, damageBits)
-{
+public onPlayerTakeDamage(victimId, inflictorId, attackerId, Float:damage, damageBits) {
     if (gActiveEvent != EVENT_DEAGLE) {
         return HAM_IGNORED;
     }
@@ -468,8 +449,7 @@ public onPlayerTakeDamage(victimId, inflictorId, attackerId, Float:damage, damag
     return HAM_HANDLED;
 }
 
-public onPlayerTraceAttack(victimId, attackerId, Float:damage, Float:direction[3], traceHandle, damageBits)
-{
+public onPlayerTraceAttack(victimId, attackerId, Float:damage, Float:direction[3], traceHandle, damageBits) {
     if (gActiveEvent != EVENT_HEADSHOT) {
         return HAM_IGNORED;
     }
@@ -480,8 +460,7 @@ public onPlayerTraceAttack(victimId, attackerId, Float:damage, Float:direction[3
     return HAM_SUPERCEDE;
 }
 
-public onResetMaxSpeed(playerId)
-{
+public onResetMaxSpeed(playerId) {
     if (gActiveEvent != EVENT_SPEED || !is_user_alive(playerId)) {
         return;
     }
@@ -493,24 +472,21 @@ public onResetMaxSpeed(playerId)
     }
 }
 
-public onWeaponTouched(weaponId, toucherId)
-{
+public onWeaponTouched(weaponId, toucherId) {
     if (!isWeaponRestricted() || !is_user_alive(toucherId)) {
         return HAM_IGNORED;
     }
     return HAM_SUPERCEDE;
 }
 
-public CS_OnBuyAttempt(playerId, item)
-{
+public CS_OnBuyAttempt(playerId, item) {
     if (isWeaponRestricted()) {
         return PLUGIN_HANDLED;
     }
     return PLUGIN_CONTINUE;
 }
 
-bool:isWeaponRestricted()
-{
+bool:isWeaponRestricted() {
     switch (gActiveEvent) {
         case EVENT_KNIVES, EVENT_AWP, EVENT_DEAGLE, EVENT_HE_WAR: {
             return true;
@@ -519,8 +495,7 @@ bool:isWeaponRestricted()
     return false;
 }
 
-bool:isSpecialMap()
-{
+bool:isSpecialMap() {
     new mapName[MAX_MAPNAME_LENGTH];
     get_mapname(mapName, charsmax(mapName));
 
@@ -532,8 +507,7 @@ bool:isSpecialMap()
     return false;
 }
 
-findEvent(const eventId[])
-{
+findEvent(const eventId[]) {
     for (new eventIndex = 0; eventIndex < FunEvent; eventIndex++) {
         if (equal(EVENT_IDS[eventIndex], eventId)) {
             return eventIndex;

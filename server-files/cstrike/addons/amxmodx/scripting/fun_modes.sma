@@ -54,8 +54,7 @@ new gVoteMenu;
 new gVoteCounts[MODE_COUNT];
 new bool:gHasVoted[MAX_PLAYERS + 1];
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     register_clcmd("say /mode", "cmdStartVote");
@@ -65,8 +64,7 @@ public plugin_init()
     get_fun_mode(gActiveMode, charsmax(gActiveMode));
 }
 
-public plugin_cfg()
-{
+public plugin_cfg() {
     // base.cfg resets everything the other modes might have changed, then
     // the mode file only has to list what makes that mode special. The bot
     // defaults sit in a block at the end of base.cfg, so the mode and map
@@ -115,8 +113,7 @@ public plugin_cfg()
     log_amx("Active mode: %s", gActiveMode);
 }
 
-public reapplyLocalConfig()
-{
+public reapplyLocalConfig() {
     execLocalConfigs();
 }
 
@@ -124,8 +121,7 @@ public reapplyLocalConfig()
  * Runs local.cfg and then local_<mode>.cfg of the active mode, each only
  * when it exists. Returns true when at least one ran.
  */
-bool:execLocalConfigs()
-{
+bool:execLocalConfigs() {
     new bool:didRun = false;
     if (file_exists(LOCAL_CONFIG)) {
         server_cmd("exec %s", LOCAL_CONFIG);
@@ -145,8 +141,7 @@ bool:execLocalConfigs()
  * Builds modes/maps/<prefix>.cfg from the part of the (lower case) map name
  * before the first underscore and returns true when that file exists.
  */
-bool:findMapTypeConfig(const mapName[], configPath[], length)
-{
+bool:findMapTypeConfig(const mapName[], configPath[], length) {
     new prefix[MAX_MAPNAME_LENGTH];
     copy(prefix, charsmax(prefix), mapName);
 
@@ -160,19 +155,16 @@ bool:findMapTypeConfig(const mapName[], configPath[], length)
     return bool:file_exists(configPath);
 }
 
-public client_putinserver(playerId)
-{
+public client_putinserver(playerId) {
     gHasVoted[playerId] = false;
     set_task(WELCOME_DELAY_SECONDS, "showWelcomeMessage", playerId);
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     remove_task(playerId);
 }
 
-public showWelcomeMessage(playerId)
-{
+public showWelcomeMessage(playerId) {
     if (!is_user_connected(playerId)) {
         return;
     }
@@ -181,8 +173,7 @@ public showWelcomeMessage(playerId)
     client_print(playerId, print_chat, "[Fun] Current mode: %s. Type /mode to start a vote.", MODE_TITLES[modeIndex]);
 }
 
-public cmdStartVote(playerId)
-{
+public cmdStartVote(playerId) {
     if (gIsVoteRunning) {
         client_print(playerId, print_chat, "[Fun] A vote is already running.");
         return PLUGIN_HANDLED;
@@ -203,8 +194,7 @@ public cmdStartVote(playerId)
     return PLUGIN_CONTINUE;
 }
 
-public cmdSetMode(playerId, level, commandId)
-{
+public cmdSetMode(playerId, level, commandId) {
     if (!cmd_access(playerId, level, commandId, 2)) {
         return PLUGIN_HANDLED;
     }
@@ -227,8 +217,7 @@ public cmdSetMode(playerId, level, commandId)
     return PLUGIN_HANDLED;
 }
 
-startModeVote(starterId)
-{
+startModeVote(starterId) {
     gIsVoteRunning = true;
     arrayset(gVoteCounts, 0, sizeof(gVoteCounts));
     arrayset(gHasVoted, false, sizeof(gHasVoted));
@@ -261,8 +250,7 @@ startModeVote(starterId)
     set_task(VOTE_DURATION_SECONDS, "finishModeVote", TASK_VOTE_END);
 }
 
-public handleVoteMenu(playerId, menu, item)
-{
+public handleVoteMenu(playerId, menu, item) {
     // Destroying the menu at the end of the vote calls this handler with
     // MENU_EXIT for everybody who still had it open, so this guard matters.
     if (!gIsVoteRunning || item < 0 || item >= MODE_COUNT) {
@@ -283,8 +271,7 @@ public handleVoteMenu(playerId, menu, item)
     return PLUGIN_HANDLED;
 }
 
-public finishModeVote()
-{
+public finishModeVote() {
     gIsVoteRunning = false;
     gNextVoteAllowedAt = get_gametime() + VOTE_COOLDOWN_SECONDS;
     menu_destroy(gVoteMenu);
@@ -314,8 +301,7 @@ public finishModeVote()
     switchToMode(winnerIndex);
 }
 
-switchToMode(modeIndex)
-{
+switchToMode(modeIndex) {
     set_localinfo(FUN_MODE_KEY, MODE_IDS[modeIndex]);
 
     // mapchooser and nextmap read this cvar on the next map, so they will
@@ -333,8 +319,7 @@ switchToMode(modeIndex)
     set_task(MAP_CHANGE_DELAY_SECONDS, "changeToMap", TASK_MAP_CHANGE, nextMap, sizeof(nextMap));
 }
 
-public changeToMap(const mapName[])
-{
+public changeToMap(const mapName[]) {
     server_cmd("changelevel %s", mapName);
 }
 
@@ -342,8 +327,7 @@ public changeToMap(const mapName[])
  * Picks a random installed map from the cycle file, preferring one that is
  * not the current map. Falls back to the current map when the list is empty.
  */
-pickRandomMapFromCycle(const mapCycleFile[], mapName[], length)
-{
+pickRandomMapFromCycle(const mapCycleFile[], mapName[], length) {
     new currentMap[MAX_MAPNAME_LENGTH];
     get_mapname(currentMap, charsmax(currentMap));
     copy(mapName, length, currentMap);
@@ -388,8 +372,7 @@ pickRandomMapFromCycle(const mapCycleFile[], mapName[], length)
 /**
  * Returns the index of the mode with this id, or 0 (classic) when unknown.
  */
-findModeIndex(const modeId[])
-{
+findModeIndex(const modeId[]) {
     for (new modeIndex = 0; modeIndex < MODE_COUNT; modeIndex++) {
         if (equal(MODE_IDS[modeIndex], modeId)) {
             return modeIndex;

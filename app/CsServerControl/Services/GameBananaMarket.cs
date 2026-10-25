@@ -118,9 +118,12 @@ public static class GameBananaMarket {
             if (modId <= 0 || name.Length == 0) {
                 continue;
             }
-            string category = record.TryGetProperty("_aSubCategory", out JsonElement subCategory) && subCategory.ValueKind == JsonValueKind.Object
-                ? StringOf(subCategory, "_sName")
-                : "";
+            string category = "";
+            bool hasSubCategory = record.TryGetProperty("_aSubCategory", out JsonElement subCategory)
+                && subCategory.ValueKind == JsonValueKind.Object;
+            if (hasSubCategory) {
+                category = StringOf(subCategory, "_sName");
+            }
             maps.Add(new MarketMap(modId, name, category, IntOf(record, "_nLikeCount"), IntOf(record, "_nViewCount"),
                 PickCardImage(record), DateTimeOffset.FromUnixTimeSeconds(LongOf(record, "_tsDateAdded"))));
         }
