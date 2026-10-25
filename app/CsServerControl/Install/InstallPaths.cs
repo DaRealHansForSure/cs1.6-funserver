@@ -24,6 +24,8 @@ internal sealed class InstallPaths {
     public string SteamCmdDir => Path.Combine(Package.ToolsDir, "steamcmd");
     public string SteamCmdExe => Path.Combine(SteamCmdDir, "steamcmd.exe");
     public string MapListFile => Path.Combine(Package.ToolsDir, "maps.csv");
+    // Maps installed from the market; created at runtime, not part of the package.
+    public string MarketListFile => Path.Combine(Package.ToolsDir, "market.csv");
 
     public string LibListFile => Path.Combine(CstrikeDir, "liblist.gam");
     public string GameInitFile => Path.Combine(CstrikeDir, "game_init.cfg");

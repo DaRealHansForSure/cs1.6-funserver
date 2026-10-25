@@ -3,13 +3,38 @@ using System.Text;
 
 namespace CsServerControl.Install;
 
-/// <summary>One row of tools\maps.csv. ModId names the GameBanana page and may be empty.</summary>
-internal sealed record MapListEntry(string Name, string Url, string ArchiveName, string ModId);
+/// <summary>
+/// One row of tools\maps.csv or tools\market.csv. ModId names the GameBanana
+/// page and may be empty. Maps lists every map the archive installed
+/// (market.csv only), so Remove knows what to delete.
+/// </summary>
+internal sealed record MapListEntry(string Name, string Url, string ArchiveName, string ModId, string Maps = "") {
+    public IReadOnlyList<string> MapNames => Maps.Length == 0 ? [Name] : Maps.Split(';', StringSplitOptions.RemoveEmptyEntries);
+}
 
-/// <summary>Reads tools\maps.csv (Name,Url,ArchiveName,ModId with a header line).</summary>
+/// <summary>Reads and writes tools\maps.csv and tools\market.csv (Name,Url,ArchiveName,ModId[,Maps] with a header line).</summary>
 internal static class MapList {
     public static IReadOnlyList<MapListEntry> Load(string path) {
         return Parse(File.ReadAllLines(path));
+    }
+
+    /// <summary>Like Load, but a missing file is an empty list (market.csv exists only after the first market install).</summary>
+    public static IReadOnlyList<MapListEntry> LoadIfExists(string path) {
+        return File.Exists(path) ? Load(path) : [];
+    }
+
+    public static void Save(string path, IEnumerable<MapListEntry> entries) {
+        List<string> lines = ["Name,Url,ArchiveName,ModId,Maps"];
+        lines.AddRange(entries.Select(entry => string.Join(',',
+            Quote(entry.Name), Quote(entry.Url), Quote(entry.ArchiveName), Quote(entry.ModId), Quote(entry.Maps))));
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        // ASCII like maps.csv; map names and GameBanana URLs are plain ASCII.
+        File.WriteAllLines(path, lines, Encoding.ASCII);
+    }
+
+    private static string Quote(string field) {
+        bool needsQuotes = field.Contains(',') || field.Contains('"');
+        return needsQuotes ? "\"" + field.Replace("\"", "\"\"") + "\"" : field;
     }
 
     public static IReadOnlyList<MapListEntry> Parse(IEnumerable<string> lines) {
@@ -34,7 +59,8 @@ internal static class MapList {
                 name,
                 FieldOf(header, fields, "Url"),
                 FieldOf(header, fields, "ArchiveName"),
-                FieldOf(header, fields, "ModId")));
+                FieldOf(header, fields, "ModId"),
+                FieldOf(header, fields, "Maps")));
         }
         return entries;
     }

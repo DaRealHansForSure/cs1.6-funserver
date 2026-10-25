@@ -31,7 +31,15 @@ public sealed class KillIcons {
 
     /// <summary>The icon for a weapon name as the live feed sends it, null when there is none.</summary>
     public ImageSource? ForWeapon(string weapon) {
-        return Get("d_" + weapon.ToLowerInvariant());
+        if (weapon.Length == 0) {
+            return null;
+        }
+        string iconName = weapon.ToLowerInvariant();
+        // The live feed sends the item a player holds, the kill icon is named after the grenade itself.
+        if (iconName == "hegrenade") {
+            iconName = "grenade";
+        }
+        return Get("d_" + iconName);
     }
 
     /// <summary>The skull the game shows for deaths without a killer (falling, world).</summary>

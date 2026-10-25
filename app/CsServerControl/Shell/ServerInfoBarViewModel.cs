@@ -21,6 +21,12 @@ public sealed partial class ServerInfoBarViewModel : ObservableObject {
         _connection = connection;
         _thumbnails = new MapThumbnails(connection.Paths);
         _connection.PropertyChanged += OnConnectionChanged;
+        MapThumbnails.PictureChanged += (_, mapName) => {
+            if (string.Equals(mapName, _connection.CurrentMap, StringComparison.OrdinalIgnoreCase)) {
+                OnPropertyChanged(nameof(MapThumbnail));
+                OnPropertyChanged(nameof(HasMapThumbnail));
+            }
+        };
 
         var timer = new DispatcherTimer(TimeSpan.FromSeconds(1), DispatcherPriority.Background, (_, _) => UpdateUptime(), Dispatcher.CurrentDispatcher);
         timer.Start();

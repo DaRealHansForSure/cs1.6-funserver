@@ -54,9 +54,6 @@ public static partial class MapDetailsReader {
             .Where(mode => MapCycleReader.Read(paths.MapCycleFile(mode.Id)).Contains(mapName, StringComparer.OrdinalIgnoreCase))
             .Select(mode => mode.Title)
             .ToList();
-        if (MapCycleReader.Read(paths.MapCycleFile("deathrun")).Contains(mapName, StringComparer.OrdinalIgnoreCase)) {
-            modes.Add("Deathrun");
-        }
         return modes.Count == 0 ? "-" : string.Join(", ", modes);
     }
 

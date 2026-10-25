@@ -68,10 +68,18 @@ time left, LAN address and uptime.
              server name, join password, max players (from the next
              start), fun rounds on/off and how often, hook speed, hook for
              admins only. TV: see below.
+             Game rules, per mode (draft, saved in
+             server\cstrike\local_<mode>.cfg): map time, round time,
+             freeze time, buy time, start money, max rounds, C4 timer,
+             gravity, friendly fire. An empty field keeps the mode's own
+             value, which the field shows. A value for Classic never
+             changes GunGame, and a running server gets it at once.
   Bots       zBot settings: difficulty, fill count, teams, weapons, radio
              and chat. Everything is a draft until Apply, also kicking a
              bot, adding bots and building navigation files; Discard drops
-             it all. Settings are saved in modes\base.cfg.
+             it all. The package defaults stay in modes\base.cfg; your
+             changes go into server\cstrike\local_bots.cfg, and "Reset to
+             defaults" (then Apply) goes back to the package values.
   Maps       every installed map in one table: picture, the modes that
              play it, where it came from (stock, map pack, custom), its
              navigation file and size. Search and a Show filter (per mode,
@@ -79,11 +87,22 @@ time left, LAN address and uptime.
              Pick (puts mode and map on the Server screen as a draft) and
              Next (next map at once). Buttons to render the missing
              pictures, queue all missing navigation files on the Bots
-             screen, open the custom-maps folder and update the maps.
+             screen, open the custom-maps folder and update the maps (with
+             its log right there, it also works while the server runs).
+             Market tab: the Counter-Strike 1.6 maps on GameBanana, search
+             by name, category (Fight Yard, Surf, Zombie Mod...) and sort
+             (most downloaded, liked, viewed, newest). Install downloads the
+             map, puts it on the server with its picture and adds it to the
+             map lists of the modes it fits; Remove takes a market map off
+             again. Only files that passed GameBanana's virus scan are
+             installed, and only map files (maps, textures, sounds, models,
+             sprites) are copied. Market maps are listed in
+             tools\market.csv, so "Update maps" restores them too.
   Stats      leaderboard of this map or the last 12 hours (kills, deaths,
              K/D, knife, HE, best weapon), the maps played tonight with
              mode and duration, and how far the current map is.
-  Install    install or repair, update maps, rebuild plugins, with the log.
+  Install    install or repair and rebuild plugins, with the log (map
+             updates run on the Maps screen, their log shows in both).
   Options    server address (automatic, or a fixed network adapter), the
              ports, the Windows Firewall rules with "Add or repair rules",
              a new RCON password, the screen the window opens on, and the

@@ -13,7 +13,7 @@
     <AssemblyName>CsServerControl</AssemblyName>
     <RootNamespace>CsServerControl</RootNamespace>
     <Product>CS 1.6 Server Control</Product>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <PackageRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\'))</PackageRoot>
@@ -56,15 +56,29 @@
     <Exec Command="dotnet test &quot;$(PackageRoot)app\CsServerControl.Tests\CsServerControl.Tests.csproj&quot; -nologo -v q --artifacts-path &quot;$(PackageRoot)app\.artifacts\tests&quot;" />
   </Target>
 
-  <!-- An open window locks the exe; the copy then fails loudly instead of
-       leaving the old version in place. -->
+  <!-- An open window or the fast download server (the same exe, running as
+       long as the game server runs) locks the exe. Windows still lets a
+       running exe be renamed, so the old one moves aside into
+       app\.artifacts\old and keeps running from there; the next start uses
+       the new one. Old copies that no longer run are cleared first. -->
   <Target Name="CopyExeToPackageRoot" AfterTargets="Publish">
-    <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(PackageRoot)4_SERVER_CONTROL.exe" />
+    <PropertyGroup>
+      <TargetExe>$(PackageRoot)4_SERVER_CONTROL.exe</TargetExe>
+      <OldExeDir>$(PackageRoot)app\.artifacts\old\</OldExeDir>
+      <OldExe>$(OldExeDir)4_SERVER_CONTROL.$([System.DateTime]::Now.ToString('yyyyMMdd-HHmmss')).exe</OldExe>
+    </PropertyGroup>
+    <ItemGroup>
+      <OldExeFile Include="$(OldExeDir)*.exe" />
+    </ItemGroup>
+    <Delete Files="@(OldExeFile)" ContinueOnError="true" />
+    <MakeDir Directories="$(OldExeDir)" />
+    <Move SourceFiles="$(TargetExe)" DestinationFiles="$(OldExe)" Condition="Exists('$(TargetExe)')" />
+    <Copy SourceFiles="$(PublishDir)$(AssemblyName).exe" DestinationFiles="$(TargetExe)" />
     <Message Importance="high" Text="Done: $(PackageRoot)4_SERVER_CONTROL.exe" />
   </Target>
 
   <!-- -p:PackRelease=true also packs release\CS16-FunServer.zip: everything a
-       LAN PC needs (the exe, README.txt, server-files, tools\maps.csv and the
+       LAN PC needs (the exe, README.txt, LICENSE, server-files, tools\maps.csv and the
        custom-maps hint), without the source code and docs. -->
   <Target Name="PackRelease" AfterTargets="CopyExeToPackageRoot" Condition="'$(PackRelease)' == 'true'">
     <PropertyGroup>
@@ -73,7 +87,7 @@
       <ReleaseZip>$(PackageRoot)release\CS16-FunServer.zip</ReleaseZip>
     </PropertyGroup>
     <ItemGroup>
-      <ReleaseFile Include="$(PackageRoot)README.txt;$(PackageRoot)4_SERVER_CONTROL.exe" />
+      <ReleaseFile Include="$(PackageRoot)README.txt;$(PackageRoot)LICENSE;$(PackageRoot)4_SERVER_CONTROL.exe" />
       <ReleaseServerFile Include="$(PackageRoot)server-files\**\*" />
       <ReleaseToolFile Include="$(PackageRoot)tools\maps.csv" />
       <ReleaseMapsHint Include="$(PackageRoot)custom-maps\PUT_MAPS_HERE.txt" />

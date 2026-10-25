@@ -37,6 +37,10 @@ public sealed partial class ModeTileViewModel : ObservableObject {
 public sealed partial class MapRowViewModel : ObservableObject {
     private readonly Action<MapRowViewModel> _onPicked;
 
+    /// <summary>False while the map search does not match; the row stays in the list for the draft.</summary>
+    [ObservableProperty]
+    private bool _isShown = true;
+
     [ObservableProperty]
     private bool _isPicked;
 
@@ -45,12 +49,13 @@ public sealed partial class MapRowViewModel : ObservableObject {
 
     public MapRowViewModel(string name, ImageSource? thumbnail, Action<MapRowViewModel> onPicked) {
         Name = name;
-        Thumbnail = thumbnail;
+        _thumbnail = thumbnail;
         _onPicked = onPicked;
     }
 
     public string Name { get; }
-    public ImageSource? Thumbnail { get; }
+    [ObservableProperty]
+    private ImageSource? _thumbnail;
 
     partial void OnIsPickedChanged(bool value) {
         if (value) {
@@ -100,6 +105,9 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
     [ObservableProperty]
     private string _commandText = "";
 
+    [ObservableProperty]
+    private string _mapSearchText = "";
+
     public ServerViewModel(ServerConnection connection, IDialogService dialogs) {
         _connection = connection;
         _dialogs = dialogs;
@@ -110,7 +118,15 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
                 OnPropertyChanged(nameof(IsDirty));
             }
         };
+        Rules = new GameRulesViewModel(connection);
+        Rules.PropertyChanged += (_, e) => {
+            if (e.PropertyName == nameof(GameRulesViewModel.IsChanged)) {
+                OnPropertyChanged(nameof(IsDirty));
+            }
+        };
         Round = new RoundActionsViewModel(connection);
+        // A picture rendered on the Maps screen shows up here at once.
+        MapThumbnails.PictureChanged += OnPictureChanged;
 
         foreach (GameMode mode in GameModes.All) {
             ModeTiles.Add(new ModeTileViewModel(mode, OnModePicked));
@@ -126,6 +142,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
 
     public ServerConnection Connection => _connection;
     public ServerSettingsViewModel Settings { get; }
+    public GameRulesViewModel Rules { get; }
     public RoundActionsViewModel Round { get; }
     public ObservableCollection<ModeTileViewModel> ModeTiles { get; } = [];
     public ObservableCollection<MapRowViewModel> Maps { get; } = [];
@@ -141,7 +158,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
     /// Settings can be saved any time; mode and map only differ from a
     /// running server.
     /// </summary>
-    public bool IsDirty => Settings.IsChanged || IsModeOrMapDirty;
+    public bool IsDirty => Settings.IsChanged || Rules.IsChanged || IsModeOrMapDirty;
 
     private bool IsModeOrMapDirty {
         get {
@@ -195,6 +212,12 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
         if (!await Settings.ApplyAsync()) {
             return;
         }
+        // The rules too: a map change below then starts with them.
+        string? rulesError = await Rules.ApplyAsync();
+        if (rulesError != null) {
+            Settings.Error = rulesError;
+            return;
+        }
 
         if (IsModeOrMapDirty && PickedMap != null) {
             string modeId = PickedMode.Mode.Id;
@@ -212,6 +235,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
     private void Discard() {
         HasDraft = false;
         Settings.Load();
+        Rules.Load();
         SyncPicksToServer();
         OnPropertyChanged(nameof(IsDirty));
     }
@@ -293,6 +317,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
     }
 
     private void OnModePicked(ModeTileViewModel tile) {
+        Rules.FollowMode(tile.Mode.Id);
         foreach (ModeTileViewModel other in ModeTiles.Where(other => other != tile)) {
             other.IsPicked = false;
         }
@@ -341,6 +366,7 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
                 Maps.Add(new MapRowViewModel(map, _thumbnails.Get(map), OnMapPicked));
             }
 
+            ApplyMapSearch();
             PickedMap = null;
             MapRowViewModel? preferred = Maps.FirstOrDefault(row => string.Equals(row.Name, preferredMap, StringComparison.OrdinalIgnoreCase));
             MapRowViewModel? first = preferred ?? Maps.FirstOrDefault();
@@ -350,6 +376,23 @@ public sealed partial class ServerViewModel : ObservableObject, IScreen {
             UpdateMapMarkers();
         } finally {
             _isSyncing = wasSyncing;
+        }
+    }
+
+    partial void OnMapSearchTextChanged(string value) {
+        ApplyMapSearch();
+    }
+
+    private void ApplyMapSearch() {
+        string search = MapSearchText.Trim();
+        foreach (MapRowViewModel row in Maps) {
+            row.IsShown = search.Length == 0 || row.Name.Contains(search, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private void OnPictureChanged(object? sender, string mapName) {
+        foreach (MapRowViewModel row in Maps.Where(row => string.Equals(row.Name, mapName, StringComparison.OrdinalIgnoreCase))) {
+            row.Thumbnail = _thumbnails.Get(mapName);
         }
     }
 

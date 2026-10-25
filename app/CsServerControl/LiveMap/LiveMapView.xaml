@@ -58,6 +58,8 @@
                                   ToolTip="Straight down (T)" Margin="0,0,6,0" />
                     <Border Style="{StaticResource VerticalDivider}" Margin="0,0,6,0" />
                     <ToggleButton Content="Names" Style="{StaticResource ToolbarToggle}" IsChecked="{Binding ShowNames, Mode=TwoWay}" Margin="0,0,6,0" />
+                    <ToggleButton Content="Weapons" Style="{StaticResource ToolbarToggle}" IsChecked="{Binding ShowWeapons, Mode=TwoWay}" Margin="0,0,6,0"
+                                  ToolTip="The weapon in hand next to each player, with the game's own icons" />
                     <ToggleButton Content="Trails" Style="{StaticResource ToolbarToggle}" IsChecked="{Binding ShowTrails, Mode=TwoWay}" Margin="0,0,6,0" />
                     <ToggleButton Content="Shots" Style="{StaticResource ToolbarToggle}" IsChecked="{Binding ShowShots, Mode=TwoWay}" Margin="0,0,6,0"
                                   ToolTip="Bullet paths in the team color; a hit on a player is drawn thicker with a cross" />
@@ -201,6 +203,8 @@
                                                     <ColumnDefinition Width="8" />
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="8" />
+                                                    <ColumnDefinition Width="48" />
+                                                    <ColumnDefinition Width="8" />
                                                     <ColumnDefinition Width="52" />
                                                     <ColumnDefinition Width="8" />
                                                     <ColumnDefinition Width="44" />
@@ -218,9 +222,14 @@
                                                     <Run Text="{Binding Name, Mode=OneWay}" />
                                                     <Run x:Name="BotTag" Text="" FontSize="{StaticResource FontSizeCaption}" Foreground="{StaticResource TextTertiary}" />
                                                 </TextBlock>
-                                                <TextBlock Grid.Column="4" Text="{Binding HealthText}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                <!-- The weapon in hand: the game's kill icon, or its name where the game has none. -->
+                                                <Image Grid.Column="4" Source="{Binding WeaponIcon}" Height="{StaticResource WeaponIconHeight}" Stretch="Uniform"
+                                                       HorizontalAlignment="Right" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                                <TextBlock Grid.Column="4" Text="{Binding WeaponText}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                           FontSize="{StaticResource FontSizeCaption}" Foreground="{StaticResource TextTertiary}" />
+                                                <TextBlock Grid.Column="6" Text="{Binding HealthText}" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                            Foreground="{StaticResource TextSecondary}" />
-                                                <TextBlock Grid.Column="6" Text="{Binding ScoreText}" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                                <TextBlock Grid.Column="8" Text="{Binding ScoreText}" HorizontalAlignment="Right" VerticalAlignment="Center"
                                                            Foreground="{StaticResource TextTertiary}" />
                                             </Grid>
                                         </Button>
@@ -318,7 +327,11 @@
                                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Health" Foreground="{StaticResource TextTertiary}" Margin="0,0,0,6" />
                                     <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedHealthText}" />
                                     <TextBlock Grid.Row="1" Grid.Column="0" Text="Weapon" Foreground="{StaticResource TextTertiary}" Margin="0,0,0,6" />
-                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedWeaponText}" />
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal">
+                                        <Image Source="{Binding SelectedWeaponIcon}" Height="{StaticResource WeaponIconHeight}" Stretch="Uniform"
+                                               VerticalAlignment="Center" Margin="0,0,8,0" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+                                        <TextBlock Text="{Binding SelectedWeaponText}" VerticalAlignment="Center" />
+                                    </StackPanel>
                                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Position" Foreground="{StaticResource TextTertiary}" Margin="0,0,0,6" />
                                     <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedPositionText}" FontFamily="{StaticResource MonoFont}" />
                                     <TextBlock Grid.Row="3" Grid.Column="0" Text="Glow" Foreground="{StaticResource TextTertiary}" />

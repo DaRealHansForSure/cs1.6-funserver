@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CsServerControl.Install;
 using CsServerControl.Server;
 using CsServerControl.Services;
 using CsServerControl.Shell;
@@ -73,9 +74,10 @@ public sealed record MapFilter(string Title, Func<MapLibraryRowViewModel, bool> 
 
 /// <summary>
 /// The Maps screen: every installed map in one table, with the modes that
-/// play it, its nav file and picture, plus the custom-maps folder. Actions
-/// that change the server go through the screen that owns them (Pick to
-/// the Server draft, nav files to the Bots queue, Update maps to Install).
+/// play it, its nav file and picture, the custom-maps folder, and the
+/// market tab to install more maps from GameBanana. Map updates and market
+/// installs run here, through the same installer and log as the Install
+/// screen. Pick goes to the Server draft, nav files to the Bots queue.
 /// </summary>
 public sealed partial class MapsViewModel : ObservableObject, IScreen {
     private readonly ServerConnection _connection;
@@ -83,8 +85,12 @@ public sealed partial class MapsViewModel : ObservableObject, IScreen {
     private readonly MapThumbnails _thumbnails;
     private readonly Func<string, string, bool> _pickOnServer;
     private readonly Action _queueMissingNavs;
-    private readonly Func<Task> _updateMaps;
+    private readonly InstallViewModel _install;
     private List<MapLibraryRowViewModel> _allRows = [];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsInstalledTab))]
+    private bool _isMarketTab;
 
     [ObservableProperty]
     private MapFilter _selectedFilter;
@@ -110,17 +116,18 @@ public sealed partial class MapsViewModel : ObservableObject, IScreen {
     [NotifyPropertyChangedFor(nameof(QueueNavText), nameof(CanQueueNavs))]
     private int _missingNavCount;
 
-    public MapsViewModel(ServerConnection connection, IDialogService dialogs, Func<string, string, bool> pickOnServer,
-            Action queueMissingNavs, Func<Task> updateMaps) {
+    public MapsViewModel(ServerConnection connection, IDialogService dialogs, InstallViewModel install,
+            Func<string, string, bool> pickOnServer, Action queueMissingNavs) {
         _connection = connection;
         _dialogs = dialogs;
         _pickOnServer = pickOnServer;
         _queueMissingNavs = queueMissingNavs;
-        _updateMaps = updateMaps;
+        _install = install;
         _thumbnails = new MapThumbnails(connection.Paths);
+        Market = new MarketViewModel(connection, dialogs, install, AfterMapsChangedAsync);
 
         List<MapFilter> filters = [new("All maps", _ => true)];
-        foreach (string modeId in Install.MapModes.AllModes) {
+        foreach (string modeId in MapModes.AllModes) {
             filters.Add(new MapFilter(GameModes.TitleOf(modeId), row => row.Entry.ModeIds.Contains(modeId)));
         }
         // Like the Bots queue: only maps in a map list get a nav file built.
@@ -131,6 +138,16 @@ public sealed partial class MapsViewModel : ObservableObject, IScreen {
         filters.Add(new MapFilter("Not playable", row => !row.Entry.IsPlayable));
         Filters = filters;
         _selectedFilter = filters[0];
+    }
+
+    public MarketViewModel Market { get; }
+
+    /// <summary>The shared installer: its log and progress show in the activity card here.</summary>
+    public InstallViewModel Install => _install;
+
+    public bool IsInstalledTab {
+        get => !IsMarketTab;
+        set => IsMarketTab = !value;
     }
 
     public IReadOnlyList<MapFilter> Filters { get; }
@@ -148,9 +165,18 @@ public sealed partial class MapsViewModel : ObservableObject, IScreen {
 
     public void OnShown() {
         _ = RefreshAsync();
+        if (IsMarketTab) {
+            Market.OnShown();
+        }
     }
 
     public void OnHidden() {
+    }
+
+    partial void OnIsMarketTabChanged(bool value) {
+        if (value) {
+            Market.OnShown();
+        }
     }
 
     partial void OnSelectedFilterChanged(MapFilter value) {
@@ -244,9 +270,20 @@ public sealed partial class MapsViewModel : ObservableObject, IScreen {
         _queueMissingNavs();
     }
 
+    /// <summary>Map pack, market maps and custom-maps again, right here with the log in the activity card.</summary>
     [RelayCommand]
-    private async Task UpdateMaps() {
-        await _updateMaps();
+    public async Task UpdateMaps() {
+        await _install.UpdateMaps();
+        foreach (MapLibraryRowViewModel row in _allRows) {
+            MapThumbnails.Forget(row.Name);
+        }
+        await AfterMapsChangedAsync();
+    }
+
+    /// <summary>After an update, install or remove: the table, the counts and the market badges follow.</summary>
+    private async Task AfterMapsChangedAsync() {
+        await RefreshAsync();
+        Market.RefreshInstalledState();
     }
 
     [RelayCommand]

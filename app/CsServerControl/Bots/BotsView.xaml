@@ -38,6 +38,11 @@
                         Visibility="{Binding IsDirty, Converter={StaticResource VisibleWhenTrue}}" />
                 <TextBlock Text="{Binding ApplyError}" FontSize="{StaticResource FontSizeSmall}" Foreground="{StaticResource DangerText}"
                            VerticalAlignment="Center" Margin="0,0,14,0" />
+                <!-- Where the values come from, and the way back to the package defaults (a draft too). -->
+                <TextBlock Text="{Binding SettingsSourceText}" FontSize="{StaticResource FontSizeSmall}" Foreground="{StaticResource TextTertiary}"
+                           VerticalAlignment="Center" Margin="0,0,10,0" />
+                <Button Content="Reset to defaults" Style="{StaticResource SecondaryButton}" Margin="0,0,8,0" Command="{Binding ResetToDefaultsCommand}"
+                        ToolTip="Loads the package defaults; Apply removes your local_bots.cfg" />
                 <!-- A toggle: on Apply all bots leave and rejoin with the new difficulty. -->
                 <ToggleButton Content="Reconnect bots" Style="{StaticResource CardToggle}" Margin="0,0,8,0"
                               IsChecked="{Binding IsReconnectPending, Mode=TwoWay}" IsEnabled="{Binding Connection.IsRunning}"

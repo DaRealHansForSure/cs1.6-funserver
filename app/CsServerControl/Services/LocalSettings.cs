@@ -12,7 +12,7 @@ namespace CsServerControl.Services;
 /// </summary>
 public sealed partial class LocalSettings {
     private const string Header =
-        "// Settings of this PC, written by the Server Control window and the start script.\r\n" +
+        "// Settings of this PC, written by the Server Control window.\r\n" +
         "// Runs after the mode config on every map. Not part of the package, never overwritten.";
 
     private readonly string _path;
@@ -46,6 +46,14 @@ public sealed partial class LocalSettings {
             }
         }
         _lines.Add(newLine);
+    }
+
+    /// <summary>Drops the cvar line, so the mode default applies again.</summary>
+    public void Remove(string cvar) {
+        _lines.RemoveAll(line => {
+            Match match = CvarLine().Match(line);
+            return match.Success && match.Groups["cvar"].Value.Equals(cvar, StringComparison.OrdinalIgnoreCase);
+        });
     }
 
     public void Save() {

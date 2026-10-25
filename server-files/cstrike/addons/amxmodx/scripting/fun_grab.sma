@@ -41,13 +41,11 @@ new gGrabbedTarget[MAX_PLAYERS + 1];
 new Float:gGrabDistance[MAX_PLAYERS + 1];
 new gBeamSprite;
 
-public plugin_precache()
-{
+public plugin_precache() {
     gBeamSprite = precache_model(BEAM_SPRITE);
 }
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     register_clcmd("+grab", "cmdGrabStart", GRAB_ADMIN_FLAG, "- grabs the player you aim at");
@@ -57,21 +55,18 @@ public plugin_init()
     register_event("DeathMsg", "onDeathMessage", "a");
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     releaseGrab(playerId);
     releaseEveryGrabOn(playerId);
 }
 
-public onDeathMessage()
-{
+public onDeathMessage() {
     new victimId = read_data(2);
     releaseGrab(victimId);
     releaseEveryGrabOn(victimId);
 }
 
-public cmdGrabStart(playerId, level)
-{
+public cmdGrabStart(playerId, level) {
     if (!(get_user_flags(playerId) & level) || !is_user_alive(playerId)) {
         return PLUGIN_HANDLED;
     }
@@ -100,30 +95,26 @@ public cmdGrabStart(playerId, level)
     return PLUGIN_HANDLED;
 }
 
-public cmdGrabStop(playerId)
-{
+public cmdGrabStop(playerId) {
     releaseGrab(playerId);
     return PLUGIN_HANDLED;
 }
 
-public cmdGrabCloser(playerId)
-{
+public cmdGrabCloser(playerId) {
     if (gGrabbedTarget[playerId] != 0) {
         gGrabDistance[playerId] = floatmax(gGrabDistance[playerId] - GRAB_DISTANCE_STEP, MIN_GRAB_DISTANCE);
     }
     return PLUGIN_HANDLED;
 }
 
-public cmdGrabFarther(playerId)
-{
+public cmdGrabFarther(playerId) {
     if (gGrabbedTarget[playerId] != 0) {
         gGrabDistance[playerId] = floatmin(gGrabDistance[playerId] + GRAB_DISTANCE_STEP, MAX_GRAB_DISTANCE);
     }
     return PLUGIN_HANDLED;
 }
 
-public holdGrabbedTarget(taskId)
-{
+public holdGrabbedTarget(taskId) {
     new grabberId = taskId - TASK_GRAB_HOLD;
     new targetId = gGrabbedTarget[grabberId];
 
@@ -156,8 +147,7 @@ public holdGrabbedTarget(taskId)
     drawGrabBeam(grabberId, targetId);
 }
 
-throwTarget(grabberId, targetId, const Float:aimDirection[3])
-{
+throwTarget(grabberId, targetId, const Float:aimDirection[3]) {
     new Float:velocity[3];
     xs_vec_mul_scalar(aimDirection, THROW_SPEED, velocity);
     set_pev(targetId, pev_velocity, velocity);
@@ -165,8 +155,7 @@ throwTarget(grabberId, targetId, const Float:aimDirection[3])
     releaseGrab(grabberId);
 }
 
-releaseGrab(grabberId)
-{
+releaseGrab(grabberId) {
     if (grabberId < 1 || grabberId > MaxClients) {
         return;
     }
@@ -181,8 +170,7 @@ releaseGrab(grabberId)
     }
 }
 
-releaseEveryGrabOn(targetId)
-{
+releaseEveryGrabOn(targetId) {
     for (new grabberId = 1; grabberId <= MaxClients; grabberId++) {
         if (gGrabbedTarget[grabberId] == targetId) {
             releaseGrab(grabberId);
@@ -190,8 +178,7 @@ releaseEveryGrabOn(targetId)
     }
 }
 
-bool:isAlreadyGrabbed(targetId)
-{
+bool:isAlreadyGrabbed(targetId) {
     for (new grabberId = 1; grabberId <= MaxClients; grabberId++) {
         if (gGrabbedTarget[grabberId] == targetId) {
             return true;
@@ -200,23 +187,20 @@ bool:isAlreadyGrabbed(targetId)
     return false;
 }
 
-getAimDirection(playerId, Float:direction[3])
-{
+getAimDirection(playerId, Float:direction[3]) {
     new Float:viewAngles[3];
     pev(playerId, pev_v_angle, viewAngles);
     angle_vector(viewAngles, ANGLEVECTOR_FORWARD, direction);
 }
 
-getEyePosition(playerId, Float:eyePosition[3])
-{
+getEyePosition(playerId, Float:eyePosition[3]) {
     new Float:origin[3], Float:viewOffset[3];
     pev(playerId, pev_origin, origin);
     pev(playerId, pev_view_ofs, viewOffset);
     xs_vec_add(origin, viewOffset, eyePosition);
 }
 
-drawGrabBeam(grabberId, targetId)
-{
+drawGrabBeam(grabberId, targetId) {
     message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
     write_byte(TE_BEAMENTS);
     write_short(grabberId);

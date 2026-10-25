@@ -126,6 +126,9 @@
     <Thickness x:Key="CardPadding">16</Thickness>
     <Thickness x:Key="SideCardPadding">12</Thickness>
     <Thickness x:Key="DetailCardPadding">14</Thickness>
+    <!-- Space between a list and its scroll bar, so numbers at the right edge stay readable. -->
+    <Thickness x:Key="VerticalScrollBarGap">12,0,0,0</Thickness>
+    <Thickness x:Key="HorizontalScrollBarGap">0,12,0,0</Thickness>
     <Thickness x:Key="ToolbarPadding">6</Thickness>
     <Thickness x:Key="ButtonPadding">16,0,16,0</Thickness>
     <Thickness x:Key="ToolbarButtonPadding">12,0,12,0</Thickness>
@@ -146,6 +149,8 @@
     <sys:Double x:Key="GapLive">12</sys:Double>
     <sys:Double x:Key="ControlHeight">36</sys:Double>
     <sys:Double x:Key="SmallButtonHeight">32</sys:Double>
+    <!-- The game's kill icons are 16 px high at 640 x 480; a little smaller keeps rows calm. -->
+    <sys:Double x:Key="WeaponIconHeight">14</sys:Double>
     <sys:Double x:Key="SegmentHeight">40</sys:Double>
     <sys:Double x:Key="PlayerRowHeight">34</sys:Double>
     <sys:Double x:Key="TableRowHeight">40</sys:Double>

@@ -64,7 +64,7 @@ public sealed partial class ShellViewModel : ObservableObject {
         Stats = new StatsViewModel(connection);
         Install = new InstallViewModel(connection, dialogs);
         InfoBar = new ServerInfoBarViewModel(connection);
-        Maps = new MapsViewModel(connection, dialogs, PickOnServer, QueueMissingNavs, UpdateMapsOnInstall);
+        Maps = new MapsViewModel(connection, dialogs, Install, PickOnServer, QueueMissingNavs);
         Options = new OptionsViewModel(connection, [
             new OptionChoice(LiveMapKey, "Live Map"),
             new OptionChoice(ServerKey, "Server"),
@@ -165,8 +165,8 @@ public sealed partial class ShellViewModel : ObservableObject {
                 _ = Install.InstallServer();
                 return;
             case AppCommandKind.UpdateMaps:
-                CurrentScreen = Install;
-                _ = Install.UpdateMaps();
+                CurrentScreen = Maps;
+                _ = Maps.UpdateMaps();
                 return;
             case AppCommandKind.Start:
                 if (!Connection.Paths.IsServerInstalled) {
@@ -204,12 +204,6 @@ public sealed partial class ShellViewModel : ObservableObject {
     private void QueueMissingNavs() {
         CurrentScreen = Bots;
         Bots.QueueAllMissingCommand.Execute(null);
-    }
-
-    /// <summary>The Install screen runs it, so its log is in view.</summary>
-    private Task UpdateMapsOnInstall() {
-        CurrentScreen = Install;
-        return Install.UpdateMaps();
     }
 
     private void SelectIf(bool isSelected, IScreen screen) {

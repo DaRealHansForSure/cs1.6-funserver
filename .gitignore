@@ -23,3 +23,5 @@ app/.artifacts/
 4_SERVER_CONTROL.exe
 release/
 tools/previews/
+# Maps installed from the market on this PC.
+tools/market.csv

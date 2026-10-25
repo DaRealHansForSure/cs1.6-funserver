@@ -72,15 +72,13 @@ new Float:gSpeedFactor[MAX_PLAYERS + 1];
 new gGlowColor[MAX_PLAYERS + 1] = {NO_GLOW, ...};
 new bool:gAreZbotHooksRegistered;
 
-public plugin_precache()
-{
+public plugin_precache() {
     precache_sound(ROCKET_LAUNCH_SOUND);
     gTrailSprite = precache_model(TRAIL_SPRITE);
     gExplosionSprite = precache_model(EXPLOSION_SPRITE);
 }
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     register_concmd("amx_glow", "cmdGlow", FUN_ADMIN_FLAG, "<target> <red|green|blue|yellow|pink|white|off>");
@@ -93,8 +91,7 @@ public plugin_init()
     RegisterHam(Ham_CS_Player_ResetMaxSpeed, "player", "onResetMaxSpeed", 1);
 }
 
-public client_putinserver(playerId)
-{
+public client_putinserver(playerId) {
     gSpeedFactor[playerId] = 1.0;
     gGlowColor[playerId] = NO_GLOW;
 
@@ -108,8 +105,7 @@ public client_putinserver(playerId)
  * are registered once more on the first bot. All bots share that vtable,
  * a second registration would run every handler twice.
  */
-public registerZbotHooks(taskId)
-{
+public registerZbotHooks(taskId) {
     new botId = taskId - TASK_ZBOT_HOOKS;
     if (gAreZbotHooksRegistered || !is_user_connected(botId)) {
         return;
@@ -120,16 +116,14 @@ public registerZbotHooks(taskId)
     RegisterHamFromEntity(Ham_CS_Player_ResetMaxSpeed, botId, "onResetMaxSpeed", 1);
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     remove_task(TASK_ROCKET_EXPLODE + playerId);
     remove_task(TASK_REAPPLY_GLOW + playerId);
     remove_task(TASK_ZBOT_HOOKS + playerId);
     gGlowColor[playerId] = NO_GLOW;
 }
 
-public onPlayerSpawned(playerId)
-{
+public onPlayerSpawned(playerId) {
     // Speed changes are a joke for one life, not a permanent buff.
     gSpeedFactor[playerId] = 1.0;
 
@@ -139,28 +133,24 @@ public onPlayerSpawned(playerId)
     }
 }
 
-public reapplyGlow(taskId)
-{
+public reapplyGlow(taskId) {
     new playerId = taskId - TASK_REAPPLY_GLOW;
     if (is_user_alive(playerId) && gGlowColor[playerId] != NO_GLOW) {
         applyGlow(playerId, gGlowColor[playerId]);
     }
 }
 
-applyGlow(playerId, colorIndex)
-{
+applyGlow(playerId, colorIndex) {
     set_user_rendering(playerId, kRenderFxGlowShell, GLOW_COLOR_VALUES[colorIndex][0], GLOW_COLOR_VALUES[colorIndex][1], GLOW_COLOR_VALUES[colorIndex][2], kRenderNormal, GLOW_THICKNESS);
 }
 
-public onResetMaxSpeed(playerId)
-{
+public onResetMaxSpeed(playerId) {
     if (is_user_alive(playerId) && gSpeedFactor[playerId] != 1.0 && get_user_maxspeed(playerId) > 1.0) {
         set_user_maxspeed(playerId, get_user_maxspeed(playerId) * gSpeedFactor[playerId]);
     }
 }
 
-public cmdGlow(adminId, level, commandId)
-{
+public cmdGlow(adminId, level, commandId) {
     if (!cmd_access(adminId, level, commandId, 3)) {
         return PLUGIN_HANDLED;
     }
@@ -196,8 +186,7 @@ public cmdGlow(adminId, level, commandId)
     return PLUGIN_HANDLED;
 }
 
-public cmdGodmode(adminId, level, commandId)
-{
+public cmdGodmode(adminId, level, commandId) {
     if (!cmd_access(adminId, level, commandId, 3)) {
         return PLUGIN_HANDLED;
     }
@@ -221,8 +210,7 @@ public cmdGodmode(adminId, level, commandId)
     return PLUGIN_HANDLED;
 }
 
-public cmdNoclip(adminId, level, commandId)
-{
+public cmdNoclip(adminId, level, commandId) {
     if (!cmd_access(adminId, level, commandId, 3)) {
         return PLUGIN_HANDLED;
     }
@@ -246,8 +234,7 @@ public cmdNoclip(adminId, level, commandId)
     return PLUGIN_HANDLED;
 }
 
-public cmdSpeed(adminId, level, commandId)
-{
+public cmdSpeed(adminId, level, commandId) {
     if (!cmd_access(adminId, level, commandId, 3)) {
         return PLUGIN_HANDLED;
     }
@@ -268,8 +255,7 @@ public cmdSpeed(adminId, level, commandId)
     return PLUGIN_HANDLED;
 }
 
-public cmdRocket(adminId, level, commandId)
-{
+public cmdRocket(adminId, level, commandId) {
     if (!cmd_access(adminId, level, commandId, 2)) {
         return PLUGIN_HANDLED;
     }
@@ -287,8 +273,7 @@ public cmdRocket(adminId, level, commandId)
     return PLUGIN_HANDLED;
 }
 
-launchRocket(playerId)
-{
+launchRocket(playerId) {
     new Float:velocity[3];
     velocity[2] = ROCKET_LAUNCH_SPEED;
     set_pev(playerId, pev_velocity, velocity);
@@ -299,8 +284,7 @@ launchRocket(playerId)
     set_task(ROCKET_FLIGHT_SECONDS, "explodeRocket", TASK_ROCKET_EXPLODE + playerId);
 }
 
-public explodeRocket(taskId)
-{
+public explodeRocket(taskId) {
     new playerId = taskId - TASK_ROCKET_EXPLODE;
     if (!is_user_alive(playerId)) {
         return;
@@ -323,8 +307,7 @@ public explodeRocket(taskId)
     user_kill(playerId, 1);
 }
 
-drawSmokeTrail(playerId)
-{
+drawSmokeTrail(playerId) {
     message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
     write_byte(TE_BEAMFOLLOW);
     write_short(playerId);
@@ -342,8 +325,7 @@ drawSmokeTrail(playerId)
  * Resolves the first argument (name, #userid, @T, @CT, @ALL) into alive
  * players. Prints a hint to the admin and returns false when nobody matches.
  */
-bool:collectTargets(adminId, targets[MAX_PLAYERS], &targetCount)
-{
+bool:collectTargets(adminId, targets[MAX_PLAYERS], &targetCount) {
     targetCount = 0;
 
     new targetArgument[MAX_NAME_LENGTH];
@@ -366,8 +348,7 @@ bool:collectTargets(adminId, targets[MAX_PLAYERS], &targetCount)
     return true;
 }
 
-collectTeamTargets(const teamArgument[], targets[MAX_PLAYERS], &targetCount)
-{
+collectTeamTargets(const teamArgument[], targets[MAX_PLAYERS], &targetCount) {
     if (equali(teamArgument, "@T")) {
         get_players(targets, targetCount, "ae", "TERRORIST");
     } else if (equali(teamArgument, "@CT")) {
@@ -379,8 +360,7 @@ collectTeamTargets(const teamArgument[], targets[MAX_PLAYERS], &targetCount)
     }
 }
 
-announceAction(adminId, const targets[MAX_PLAYERS], targetCount, const actionText[])
-{
+announceAction(adminId, const targets[MAX_PLAYERS], targetCount, const actionText[]) {
     new adminName[MAX_NAME_LENGTH];
     get_user_name(adminId, adminName, charsmax(adminName));
 
@@ -394,8 +374,7 @@ announceAction(adminId, const targets[MAX_PLAYERS], targetCount, const actionTex
     client_print(0, print_chat, "[Fun] Admin %s %s %s.", adminName, actionText, targetName);
 }
 
-findGlowColor(const colorName[])
-{
+findGlowColor(const colorName[]) {
     for (new i = 0; i < sizeof(GLOW_COLOR_NAMES); i++) {
         if (equal(GLOW_COLOR_NAMES[i], colorName)) {
             return i;

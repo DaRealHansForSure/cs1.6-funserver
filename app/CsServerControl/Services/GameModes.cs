@@ -8,6 +8,7 @@ public static class GameModes {
         new("gungame", "GunGame", "24 weapon levels, free for all"),
         new("zombie", "Zombie", "Humans against zombies, infection"),
         new("deathmatch", "Deathmatch", "Instant respawn, random weapons"),
+        new("deathrun", "Deathrun", "One trapper, everyone else runs the course"),
     ];
 
     public static string TitleOf(string? modeId) {
@@ -18,7 +19,7 @@ public static class GameModes {
         if (string.IsNullOrEmpty(modeId)) {
             return "-";
         }
-        // Modes the window has no tile for (deathrun) still get a readable name.
+        // A mode id the window does not know (a hand-made mode config) still gets a readable name.
         return char.ToUpperInvariant(modeId[0]) + modeId[1..];
     }
 }

@@ -86,22 +86,19 @@ new bool:gHasRoundStarted;
 new Float:gRoundStartedAt;
 new bool:gIsHookLibraryLoaded;
 
-public plugin_natives()
-{
+public plugin_natives() {
     set_module_filter("filterMissingLibrary");
     set_native_filter("filterMissingNative");
 }
 
-public filterMissingLibrary(const library[], LibType:type)
-{
+public filterMissingLibrary(const library[], LibType:type) {
     if (equal(library, HOOK_LIBRARY)) {
         return PLUGIN_HANDLED;
     }
     return PLUGIN_CONTINUE;
 }
 
-public filterMissingNative(const nativeName[], nativeIndex, isTrap)
-{
+public filterMissingNative(const nativeName[], nativeIndex, isTrap) {
     // A missing native only matters when it is really called, and every
     // call is guarded by gIsHookLibraryLoaded.
     if (!isTrap) {
@@ -110,8 +107,7 @@ public filterMissingNative(const nativeName[], nativeIndex, isTrap)
     return PLUGIN_CONTINUE;
 }
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     gTargetCvar = create_cvar("fun_livemap_target", "127.0.0.1", _, "IP address the live map packets go to");
@@ -139,8 +135,7 @@ public plugin_init()
     resetShotPacket();
 }
 
-public plugin_cfg()
-{
+public plugin_cfg() {
     // Both cvars come from ReGameDLL; a pointer of 0 simply means unknown.
     gRoundTimeCvar = get_cvar_pointer("mp_roundtime");
     gRoundInfiniteCvar = get_cvar_pointer("mp_round_infinite");
@@ -150,23 +145,19 @@ public plugin_cfg()
     startSnapshotTask();
 }
 
-public plugin_end()
-{
+public plugin_end() {
     closeSocket();
 }
 
-public onTargetChanged(pointer, const oldValue[], const newValue[])
-{
+public onTargetChanged(pointer, const oldValue[], const newValue[]) {
     openSocket();
 }
 
-public onIntervalChanged(pointer, const oldValue[], const newValue[])
-{
+public onIntervalChanged(pointer, const oldValue[], const newValue[]) {
     startSnapshotTask();
 }
 
-openSocket()
-{
+openSocket() {
     closeSocket();
 
     new host[HOST_LENGTH];
@@ -184,8 +175,7 @@ openSocket()
     log_amx("Live map: sending to %s:%d", host, port);
 }
 
-closeSocket()
-{
+closeSocket() {
     if (gSocket == SOCKET_CLOSED) {
         return;
     }
@@ -194,8 +184,7 @@ closeSocket()
     gSocket = SOCKET_CLOSED;
 }
 
-startSnapshotTask()
-{
+startSnapshotTask() {
     remove_task(TASK_SNAPSHOT);
 
     new Float:interval = get_pcvar_float(gIntervalCvar);
@@ -205,14 +194,12 @@ startSnapshotTask()
     set_task(interval, "sendSnapshot", TASK_SNAPSHOT, _, _, "b");
 }
 
-public onRoundStart()
-{
+public onRoundStart() {
     gHasRoundStarted = true;
     gRoundStartedAt = get_gametime();
 }
 
-public onDeathMessage()
-{
+public onDeathMessage() {
     if (gSocket == SOCKET_CLOSED) {
         return;
     }
@@ -240,8 +227,7 @@ public onDeathMessage()
     socket_send2(gSocket, gKillPacket, length);
 }
 
-public onGunFirePre(weaponId)
-{
+public onGunFirePre(weaponId) {
     if (gSocket == SOCKET_CLOSED) {
         return HAM_IGNORED;
     }
@@ -258,14 +244,12 @@ public onGunFirePre(weaponId)
     return HAM_IGNORED;
 }
 
-public onGunFirePost(weaponId)
-{
+public onGunFirePost(weaponId) {
     stopRecordingShot();
     return HAM_IGNORED;
 }
 
-stopRecordingShot()
-{
+stopRecordingShot() {
     gShooterId = 0;
     if (gTraceForward != -1) {
         unregister_forward(FM_TraceLine, gTraceForward, 1);
@@ -273,8 +257,7 @@ stopRecordingShot()
     }
 }
 
-public onTraceLine(const Float:start[3], const Float:end[3], noMonsters, skipEntity, traceHandle)
-{
+public onTraceLine(const Float:start[3], const Float:end[3], noMonsters, skipEntity, traceHandle) {
     // Only the shooter's own traces: a plugin reacting to the shot inside
     // the same call could trace for something else.
     if (gShooterId == 0 || skipEntity != gShooterId) {
@@ -299,14 +282,12 @@ public onTraceLine(const Float:start[3], const Float:end[3], noMonsters, skipEnt
     return FMRES_IGNORED;
 }
 
-resetShotPacket()
-{
+resetShotPacket() {
     gShotPacketLength = formatex(gShotPacket, charsmax(gShotPacket), "%s|T", PACKET_PREFIX);
     gShotCount = 0;
 }
 
-sendShots()
-{
+sendShots() {
     if (gShotCount == 0) {
         return;
     }
@@ -314,8 +295,7 @@ sendShots()
     resetShotPacket();
 }
 
-public sendSnapshot()
-{
+public sendSnapshot() {
     if (gSocket == SOCKET_CLOSED) {
         return;
     }
@@ -354,8 +334,7 @@ public sendSnapshot()
  * Writes the "P|..." line of one player into gPacket at the given offset
  * and returns the number of characters written.
  */
-appendPlayerLine(playerId, offset)
-{
+appendPlayerLine(playerId, offset) {
     new name[MAX_NAME_LENGTH];
     get_user_name(playerId, name, charsmax(name));
     // The separators must never show up inside a field.
@@ -427,8 +406,7 @@ appendPlayerLine(playerId, offset)
         glowBlue);
 }
 
-getTeamName(playerId, teamName[], length)
-{
+getTeamName(playerId, teamName[], length) {
     // Unassigned players are still choosing a team, the app shows them as
     // spectators.
     new team = get_user_team(playerId);
@@ -443,8 +421,7 @@ getTeamName(playerId, teamName[], length)
     copy(teamName, length, "SPEC");
 }
 
-getShortWeaponName(playerId, weaponName[], length)
-{
+getShortWeaponName(playerId, weaponName[], length) {
     new weaponId = get_user_weapon(playerId);
     if (weaponId <= 0) {
         return;
@@ -465,8 +442,7 @@ getShortWeaponName(playerId, weaponName[], length)
  * Seconds left in the current round, or -1 when rounds never end
  * (mp_round_infinite) or no round has started on this map yet.
  */
-getRoundSecondsLeft()
-{
+getRoundSecondsLeft() {
     if (!gHasRoundStarted || isRoundInfinite() || !gRoundTimeCvar) {
         return ROUND_TIME_UNKNOWN;
     }
@@ -480,8 +456,7 @@ getRoundSecondsLeft()
     return secondsLeft;
 }
 
-bool:isRoundInfinite()
-{
+bool:isRoundInfinite() {
     if (!gRoundInfiniteCvar) {
         return false;
     }

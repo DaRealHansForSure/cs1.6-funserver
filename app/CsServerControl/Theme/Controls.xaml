@@ -353,7 +353,9 @@
                         <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{StaticResource RadiusControl}">
                             <Grid>
-                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                                <!-- No margin: TextBox already hands its Padding to the content host, a margin here doubled it
+                                     and put the caret 8 px right of the placeholder. -->
+                                <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
                                 <TextBlock x:Name="Placeholder" Text="{TemplateBinding Tag}" Margin="10,0,10,0" VerticalAlignment="Center"
                                            FontFamily="{TemplateBinding FontFamily}" Foreground="{StaticResource TextTertiary}"
                                            IsHitTestVisible="False" Visibility="Collapsed" />
@@ -387,7 +389,9 @@
                                 BorderThickness="{StaticResource BorderOne}" CornerRadius="{StaticResource RadiusControl}" />
                         <Border BorderBrush="{StaticResource Accent}" BorderThickness="0,0,0,2" CornerRadius="{StaticResource RadiusControl}">
                             <Grid>
-                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" />
+                                <!-- No margin: TextBox already hands its Padding to the content host, a margin here doubled it
+                                     and put the caret 8 px right of the placeholder. -->
+                                <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
                                 <TextBlock x:Name="Placeholder" Text="{TemplateBinding Tag}" Margin="10,0,10,0" VerticalAlignment="Center"
                                            FontFamily="{TemplateBinding FontFamily}" Foreground="{StaticResource TextTertiary}"
                                            IsHitTestVisible="False" Visibility="Collapsed" />
@@ -450,13 +454,15 @@
                                       IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" />
                         <ContentPresenter Margin="12,0,32,0" VerticalAlignment="Center" IsHitTestVisible="False"
                                           Content="{TemplateBinding SelectionBoxItem}"
-                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" />
-                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True"
+                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" />
+                        <!-- No AllowsTransparency: square corners need none, and a layered (transparent)
+                             popup is drawn in software, which made every first open take a second or two. -->
+                        <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" VerticalOffset="2"
                                Focusable="False" PopupAnimation="None">
                             <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
                                     Background="{StaticResource CardBackground}" BorderBrush="{StaticResource ControlBorder}"
-                                    BorderThickness="{StaticResource BorderOne}" CornerRadius="{StaticResource RadiusControl}" Padding="4"
-                                    Margin="0,2,0,0">
+                                    BorderThickness="{StaticResource BorderOne}" CornerRadius="{StaticResource RadiusControl}" Padding="4">
                                 <ScrollViewer MaxHeight="300">
                                     <ItemsPresenter />
                                 </ScrollViewer>
@@ -506,6 +512,7 @@
     <Style TargetType="ScrollBar">
         <Setter Property="Width" Value="8" />
         <Setter Property="MinWidth" Value="8" />
+        <Setter Property="Margin" Value="{StaticResource VerticalScrollBarGap}" />
         <Setter Property="Background" Value="{StaticResource Transparent}" />
         <Setter Property="Template">
             <Setter.Value>
@@ -528,6 +535,7 @@
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Height" Value="8" />
                 <Setter Property="MinHeight" Value="8" />
+                <Setter Property="Margin" Value="{StaticResource HorizontalScrollBarGap}" />
                 <Setter Property="Width" Value="Auto" />
                 <Setter Property="Template">
                     <Setter.Value>
@@ -599,7 +607,7 @@
                                   StrokeThickness="1.5" VerticalAlignment="Center" Margin="12,0,0,0" Visibility="Collapsed" />
                             <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="4" VerticalOffset="-5"
                                    IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
-                                   AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                                   Focusable="False" PopupAnimation="None">
                                 <Border Background="{StaticResource CardBackground}" BorderBrush="{StaticResource ControlBorder}"
                                         BorderThickness="{StaticResource BorderOne}" Padding="4">
                                     <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />

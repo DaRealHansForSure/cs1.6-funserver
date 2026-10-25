@@ -61,21 +61,18 @@ new gEnabledCvar;
 new gSpeedCvar;
 new gAdminOnlyCvar;
 
-public plugin_natives()
-{
+public plugin_natives() {
     // fun_livemap draws the hook rope on the live map, but must also run
     // without this plugin, so it finds the native through this library name.
     register_library("fun_hook");
     register_native("fun_hook_get_point", "nativeGetHookPoint");
 }
 
-public plugin_precache()
-{
+public plugin_precache() {
     gBeamSprite = precache_model(BEAM_SPRITE);
 }
 
-public plugin_init()
-{
+public plugin_init() {
     register_plugin(PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_AUTHOR);
 
     gEnabledCvar = create_cvar("fun_hook_enabled", "1", _, "Hook on (1) or off (0)", true, 0.0, true, 1.0);
@@ -92,18 +89,15 @@ public plugin_init()
     register_event("DeathMsg", "onDeathMessage", "a");
 }
 
-public client_disconnected(playerId)
-{
+public client_disconnected(playerId) {
     stopHook(playerId);
 }
 
-public onDeathMessage()
-{
+public onDeathMessage() {
     stopHook(read_data(2));
 }
 
-public cmdHookStart(playerId)
-{
+public cmdHookStart(playerId) {
     if (!canUseHook(playerId) || gIsHooking[playerId]) {
         return PLUGIN_HANDLED;
     }
@@ -129,8 +123,7 @@ public cmdHookStart(playerId)
 }
 
 // native bool:fun_hook_get_point(playerId, Float:point[3])
-public bool:nativeGetHookPoint(pluginId, paramCount)
-{
+public bool:nativeGetHookPoint(pluginId, paramCount) {
     new playerId = get_param(1);
     if (playerId < 1 || playerId > MaxClients) {
         return false;
@@ -144,14 +137,12 @@ public bool:nativeGetHookPoint(pluginId, paramCount)
     return true;
 }
 
-public cmdHookStop(playerId)
-{
+public cmdHookStop(playerId) {
     stopHook(playerId);
     return PLUGIN_HANDLED;
 }
 
-bool:canUseHook(playerId)
-{
+bool:canUseHook(playerId) {
     if (!get_pcvar_num(gEnabledCvar)) {
         client_print(playerId, print_center, "The hook is off in this mode.");
         return false;
@@ -170,8 +161,7 @@ bool:canUseHook(playerId)
     return true;
 }
 
-stopHook(playerId)
-{
+stopHook(playerId) {
     if (playerId < 1 || playerId > MaxClients) {
         return;
     }
@@ -180,8 +170,7 @@ stopHook(playerId)
     remove_task(TASK_HOOK_PULL + playerId);
 }
 
-public pullTowardsHookPoint(taskId)
-{
+public pullTowardsHookPoint(taskId) {
     new playerId = taskId - TASK_HOOK_PULL;
 
     if (!is_user_alive(playerId)) {
@@ -208,8 +197,7 @@ public pullTowardsHookPoint(taskId)
     drawHookBeam(playerId);
 }
 
-drawHookBeam(playerId)
-{
+drawHookBeam(playerId) {
     new colorIndex = gHookColorIndex[playerId];
 
     message_begin(MSG_BROADCAST, SVC_TEMPENTITY);
